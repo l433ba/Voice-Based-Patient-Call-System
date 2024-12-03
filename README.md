@@ -114,24 +114,6 @@ npm start
 - Email: admin
 - Password: admin
 
-#### Project Structure
-Voice-Based-Patient-Call-System/
-├── client/           # React Native frontend
-│   ├── src/
-│   │   ├── components/  # Reusable components
-│   │   ├── screens/     # Screen components
-│   │   ├── contexts/    # Context providers
-│   │   ├── services/    # API services
-│   │   └── types/       # TypeScript definitions
-│
-├── server/           # Node.js backend
-│   ├── src/
-│   │   ├── controllers/  # Route controllers
-│   │   ├── models/       # Database models
-│   │   ├── routes/       # API routes
-│   │   ├── middleware/   # Custom middleware
-│   │   └── services/     # Business logic
-└── README.md         # Documentation
 
 #### Contributing
 Contributions are welcome! Follow these steps: 
