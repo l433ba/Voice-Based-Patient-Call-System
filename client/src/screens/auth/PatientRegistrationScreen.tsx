@@ -142,108 +142,103 @@ export const PatientRegistrationScreen = () => {
       </TouchableOpacity>
 
       <View style={styles.form}>
-        <View style={styles.formSection}>
-          <View style={styles.inputContainer}>
-            <Icon name="person" size={24} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Name"
-              placeholderTextColor="#999"
-              value={formData.fullName}
-              onChangeText={(text) => setFormData({ ...formData, fullName: text })}
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="email" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Email"
-              value={formData.email}
-              onChangeText={(text) => setFormData({ ...formData, email: text })}
-              keyboardType="email-address"
-              autoCapitalize="none"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="lock" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Password"
-              value={formData.password}
-              onChangeText={(text) => setFormData({ ...formData, password: text })}
-              secureTextEntry
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="location-on" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Full Address"
-              value={formData.fullAddress}
-              onChangeText={(text) => setFormData({ ...formData, fullAddress: text })}
-              multiline
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="phone" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Contact Number"
-              value={formData.contactNumber}
-              onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
-              keyboardType="phone-pad"
-            />
-          </View>
-
-          <View style={styles.inputContainer}>
-            <Icon name="emergency" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Emergency Contact"
-              value={formData.emergencyContact}
-              onChangeText={(text) => setFormData({ ...formData, emergencyContact: text })}
-              keyboardType="phone-pad"
-            />
-          </View>
+        <View style={styles.inputContainer}>
+          <Icon name="person" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name"
+            value={formData.fullName}
+            onChangeText={(text) => setFormData({ ...formData, fullName: text })}
+          />
         </View>
 
-        <View style={styles.formSection}>
-          <View style={styles.inputContainer}>
-            <Icon name="meeting-room" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Room Number"
-              value={formData.roomNumber}
-              onChangeText={(text) => setFormData({ ...formData, roomNumber: text })}
-            />
-          </View>
+        <View style={styles.inputContainer}>
+          <Icon name="email" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Email"
+            value={formData.email}
+            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
-          <View style={styles.inputContainer}>
-            <Icon name="single-bed" size={20} color="#666" style={styles.inputIcon} />
-            <TextInput
-              style={styles.input}
-              placeholder="Bed Number"
-              value={formData.bedNumber}
-              onChangeText={(text) => setFormData({ ...formData, bedNumber: text })}
-            />
-          </View>
+        <View style={styles.inputContainer}>
+          <Icon name="lock" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password"
+            value={formData.password}
+            onChangeText={(text) => setFormData({ ...formData, password: text })}
+            secureTextEntry
+          />
+        </View>
 
-          <View style={[styles.inputContainer, styles.pickerContainer]}>
-            <Icon name="local-hospital" size={20} color="#666" style={styles.inputIcon} />
-            <Picker
-              selectedValue={formData.disease}
-              style={[styles.input, styles.picker]}
-              onValueChange={(itemValue) => setFormData({ ...formData, disease: itemValue })}
-            >
-              {diseases.map((disease, index) => (
-                <Picker.Item key={index} label={disease} value={disease} />
-              ))}
-            </Picker>
-          </View>
+        <View style={styles.inputContainer}>
+          <Icon name="location-on" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Full Address"
+            value={formData.fullAddress}
+            onChangeText={(text) => setFormData({ ...formData, fullAddress: text })}
+            multiline
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Icon name="phone" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Contact Number"
+            value={formData.contactNumber}
+            onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Icon name="emergency" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Emergency Contact"
+            value={formData.emergencyContact}
+            onChangeText={(text) => setFormData({ ...formData, emergencyContact: text })}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Icon name="meeting-room" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Room Number"
+            value={formData.roomNumber}
+            onChangeText={(text) => setFormData({ ...formData, roomNumber: text })}
+          />
+        </View>
+
+        <View style={styles.inputContainer}>
+          <Icon name="single-bed" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Bed Number"
+            value={formData.bedNumber}
+            onChangeText={(text) => setFormData({ ...formData, bedNumber: text })}
+          />
+        </View>
+
+        <View style={[styles.inputContainer, styles.pickerContainer]}>
+          <Icon name="local-hospital" size={20} color="#666" style={styles.inputIcon} />
+          <Picker
+            selectedValue={formData.disease}
+            style={[styles.input, styles.picker]}
+            onValueChange={(itemValue) => setFormData({ ...formData, disease: itemValue })}
+          >
+            {diseases.map((disease, index) => (
+              <Picker.Item key={index} label={disease} value={disease} />
+            ))}
+          </Picker>
         </View>
 
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
@@ -305,11 +300,6 @@ const styles = StyleSheet.create({
   form: {
     width: '100%',
     gap: 15,
-    paddingBottom: 30,
-  },
-  formSection: {
-    gap: 15,
-    marginBottom: 20,
   },
   inputContainer: {
     flexDirection: 'row',
@@ -317,16 +307,14 @@ const styles = StyleSheet.create({
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    paddingHorizontal: 12,
+    paddingHorizontal: 10,
     backgroundColor: '#f8f9fa',
     minHeight: 50,
-    overflow: 'hidden',
   },
   inputIcon: {
-    marginRight: 12,
-    width: 24,
+    marginRight: 10,
+    width: 20,
     textAlign: 'center',
-    color: '#666',
   },
   input: {
     flex: 1,
@@ -334,16 +322,14 @@ const styles = StyleSheet.create({
     fontSize: 16,
     color: '#333',
     paddingVertical: 8,
-    paddingRight: 12,
   },
   pickerContainer: {
     padding: 0,
     overflow: 'hidden',
   },
   picker: {
-    marginLeft: -12,
+    marginLeft: -8,
     height: 50,
-    width: '100%',
   },
   submitButton: {
     backgroundColor: '#4c669f',
@@ -365,16 +351,5 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
-  },
-  inputLabel: {
-    fontSize: 14,
-    color: '#666',
-    marginBottom: 4,
-    marginLeft: 4,
-  },
-  multilineInput: {
-    minHeight: 80,
-    textAlignVertical: 'top',
-    paddingTop: 12,
   },
 }); 
