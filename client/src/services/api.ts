@@ -1,4 +1,4 @@
-import axios, { AxiosRequestConfig, AxiosResponse, AxiosError } from 'axios';
+import axios from 'axios';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { API_URL } from '../config';
 
@@ -7,29 +7,39 @@ const api = axios.create({
   headers: {
     'Content-Type': 'application/json',
   },
+  timeout: 10000,
 });
 
 api.interceptors.request.use(
-  async (config: AxiosRequestConfig) => {
-    const token = await AsyncStorage.getItem('token');
-    if (token && config.headers) {
-      config.headers.Authorization = `Bearer ${token}`;
+  async (config) => {
+    try {
+      const token = await AsyncStorage.getItem('token');
+      if (token && config.headers) {
+        config.headers.Authorization = `Bearer ${token}`;
+      }
+      return config;
+    } catch (error) {
+      return Promise.reject(error);
     }
-    return config;
   },
-  (error: AxiosError) => {
+  (error) => {
     return Promise.reject(error);
   }
 );
 
 api.interceptors.response.use(
-  (response: AxiosResponse) => response,
-  async (error: AxiosError) => {
-    if (error.response?.status === 401) {
-      await AsyncStorage.removeItem('token');
-      await AsyncStorage.removeItem('user');
+  (response) => response,
+  async (error) => {
+    if (error.response) {
+      console.error('Response Error:', error.response.data);
+      return Promise.reject(error);
+    } else if (error.request) {
+      console.error('Network Error:', error.request);
+      return Promise.reject(new Error('Network error - please check your connection'));
+    } else {
+      console.error('Error:', error.message);
+      return Promise.reject(error);
     }
-    return Promise.reject(error);
   }
 );
 
