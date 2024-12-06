@@ -85,7 +85,6 @@ cd Voice-Based-Patient-Call-System
 ```bash
 cd server
 npm install
-cp .env.example .env
 ```
 #### Update the .env file with your configurations:
 MONGO_URI=your_mongodb_uri
