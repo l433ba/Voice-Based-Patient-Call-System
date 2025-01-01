@@ -1,3 +1,9 @@
+/**
+ * AdminDashboard.tsx
+ * Main dashboard screen for administrators to manage nurses and view system statistics.
+ * Provides functionality for approving new nurse registrations and monitoring key metrics.
+ */
+
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -5,14 +11,19 @@ import {
   StyleSheet,
   TouchableOpacity,
   ScrollView,
-  Alert,
-  RefreshControl
+  RefreshControl,
+  Dimensions,
+  Alert
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { useAuth } from '@/contexts/AuthContext';
 import { nurseApi, requestApi } from '@/services/api';
 import Toast from 'react-native-toast-message';
+import { LinearGradient } from 'expo-linear-gradient';
 
+const { width } = Dimensions.get('window');
+
+// Types for dashboard statistics
 interface DashboardStats {
   pendingNurses: number;
   activeNurses: number;
@@ -20,6 +31,7 @@ interface DashboardStats {
   openRequests: number;
 }
 
+// Type definition for nurse approval requests
 interface PendingNurse {
   _id: string;
   fullName: string;
@@ -29,7 +41,10 @@ interface PendingNurse {
 }
 
 export const AdminDashboard = () => {
+  // Access authentication context
   const { user, logout } = useAuth();
+  
+  // State management for dashboard data
   const [stats, setStats] = useState<DashboardStats>({
     pendingNurses: 0,
     activeNurses: 0,
@@ -39,6 +54,9 @@ export const AdminDashboard = () => {
   const [pendingNurses, setPendingNurses] = useState<PendingNurse[]>([]);
   const [refreshing, setRefreshing] = useState(false);
 
+  /**
+   * Fetches and updates dashboard statistics including nurse and request counts
+   */
   const fetchDashboardStats = async () => {
     try {
       const [nursesResponse, requestsResponse] = await Promise.all([
@@ -70,6 +88,9 @@ export const AdminDashboard = () => {
     }
   };
 
+  /**
+   * Fetches the list of nurses pending approval
+   */
   const fetchPendingNurses = async () => {
     try {
       const response = await nurseApi.getNurses();
@@ -86,12 +107,18 @@ export const AdminDashboard = () => {
     }
   };
 
+  /**
+   * Handles the approval of a nurse registration request
+   * Updates local state and sends approval to backend
+   */
   const handleApproveNurse = async (nurseId: string) => {
     try {
       await nurseApi.approveNurse(nurseId);
       
+      // Remove approved nurse from pending list
       setPendingNurses(prev => prev.filter(nurse => nurse._id !== nurseId));
       
+      // Update dashboard statistics
       setStats(prev => ({
         ...prev,
         pendingNurses: prev.pendingNurses - 1,
@@ -113,6 +140,9 @@ export const AdminDashboard = () => {
     }
   };
 
+  /**
+   * Handles admin logout with confirmation dialog
+   */
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -127,7 +157,6 @@ export const AdminDashboard = () => {
           onPress: async () => {
             try {
               await logout();
-              // Navigation will be handled by AuthContext
             } catch (error) {
               Toast.show({
                 type: 'error',
@@ -142,6 +171,9 @@ export const AdminDashboard = () => {
     );
   };
 
+  /**
+   * Handles pull-to-refresh functionality
+   */
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardStats();
@@ -149,6 +181,7 @@ export const AdminDashboard = () => {
     setRefreshing(false);
   };
 
+  // Initial data fetch on component mount
   useEffect(() => {
     fetchDashboardStats();
     fetchPendingNurses();
@@ -161,44 +194,70 @@ export const AdminDashboard = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#2C6EAB', '#4c669f']}
+        style={styles.header}
+      >
         <View style={styles.headerContent}>
-          <Text style={styles.welcomeText}>Welcome, Administrator</Text>
+          <View>
+            <Text style={styles.welcomeText}>Welcome Back</Text>
+            <Text style={styles.adminName}>Administrator</Text>
+          </View>
           <TouchableOpacity 
             style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Icon name="logout" size={24} color="#ff4444" />
+            <Icon name="logout" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       <View style={styles.statsContainer}>
-        <View style={styles.statCard}>
+        <View style={styles.statRow}>
+          <View style={[styles.statCard, styles.elevation]}>
+            <Icon name="people" size={32} color="#2C6EAB" />
           <Text style={styles.statNumber}>{stats.pendingNurses}</Text>
           <Text style={styles.statLabel}>Pending Nurses</Text>
         </View>
-        <View style={styles.statCard}>
+          <View style={[styles.statCard, styles.elevation]}>
+            <Icon name="medical-services" size={32} color="#2C6EAB" />
           <Text style={styles.statNumber}>{stats.activeNurses}</Text>
           <Text style={styles.statLabel}>Active Nurses</Text>
+          </View>
         </View>
-        <View style={styles.statCard}>
+        <View style={styles.statRow}>
+          <View style={[styles.statCard, styles.elevation]}>
+            <Icon name="assignment" size={32} color="#2C6EAB" />
           <Text style={styles.statNumber}>{stats.openRequests}</Text>
           <Text style={styles.statLabel}>Open Requests</Text>
+          </View>
+          <View style={[styles.statCard, styles.elevation]}>
+            <Icon name="person" size={32} color="#2C6EAB" />
+            <Text style={styles.statNumber}>{stats.totalPatients}</Text>
+            <Text style={styles.statLabel}>Total Patients</Text>
+          </View>
         </View>
       </View>
 
       <View style={styles.section}>
-        <Text style={styles.sectionTitle}>Pending Nurse Approvals</Text>
+        <Text style={styles.sectionTitle}>Pending Approvals</Text>
         {pendingNurses.length === 0 ? (
+          <View style={[styles.emptyState, styles.elevation]}>
+            <Icon name="check-circle" size={48} color="#2C6EAB" />
           <Text style={styles.emptyText}>No pending approvals</Text>
+          </View>
         ) : (
           pendingNurses.map(nurse => (
-            <View key={nurse._id} style={styles.nurseCard}>
+            <View key={nurse._id} style={[styles.nurseCard, styles.elevation]}>
               <View style={styles.nurseInfo}>
+                <View style={styles.nurseIconContainer}>
+                  <Icon name="person" size={24} color="#fff" />
+                </View>
+                <View style={styles.nurseDetails}>
                 <Text style={styles.nurseName}>{nurse.fullName}</Text>
                 <Text style={styles.nurseEmail}>{nurse.email}</Text>
                 <Text style={styles.nurseRole}>{nurse.nurseRole}</Text>
+                </View>
               </View>
               <TouchableOpacity
                 style={styles.approveButton}
@@ -211,15 +270,26 @@ export const AdminDashboard = () => {
         )}
       </View>
 
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon name="people" size={24} color="#4c669f" />
-          <Text style={styles.actionButtonText}>Manage Nurses</Text>
+      <View style={styles.quickActions}>
+        <Text style={styles.sectionTitle}>Quick Actions</Text>
+        <View style={styles.actionGrid}>
+          <TouchableOpacity style={[styles.actionCard, styles.elevation]}>
+            <Icon name="people" size={32} color="#2C6EAB" />
+            <Text style={styles.actionText}>Manage Nurses</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionCard, styles.elevation]}>
+            <Icon name="assignment" size={32} color="#2C6EAB" />
+            <Text style={styles.actionText}>View Requests</Text>
+          </TouchableOpacity>
+          <TouchableOpacity style={[styles.actionCard, styles.elevation]}>
+            <Icon name="analytics" size={32} color="#2C6EAB" />
+            <Text style={styles.actionText}>Reports</Text>
         </TouchableOpacity>
-        <TouchableOpacity style={styles.actionButton}>
-          <Icon name="assignment" size={24} color="#4c669f" />
-          <Text style={styles.actionButtonText}>View Requests</Text>
+          <TouchableOpacity style={[styles.actionCard, styles.elevation]}>
+            <Icon name="settings" size={32} color="#2C6EAB" />
+            <Text style={styles.actionText}>Settings</Text>
         </TouchableOpacity>
+        </View>
       </View>
     </ScrollView>
   );
@@ -228,117 +298,96 @@ export const AdminDashboard = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f5f7fa',
   },
   header: {
     padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 40,
+    borderBottomLeftRadius: 20,
+    borderBottomRightRadius: 20,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
-    paddingHorizontal: 10,
   },
   welcomeText: {
+    fontSize: 16,
+    color: '#fff',
+    opacity: 0.9,
+  },
+  adminName: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
+    color: '#fff',
+    marginTop: 4,
   },
   logoutButton: {
     padding: 8,
     borderRadius: 8,
-    backgroundColor: '#fff5f5',
-    marginLeft: 15,
+    backgroundColor: 'rgba(255,255,255,0.2)',
   },
   statsContainer: {
+    padding: 15,
+    marginTop: -30,
+  },
+  statRow: {
     flexDirection: 'row',
     justifyContent: 'space-between',
-    padding: 20,
+    marginBottom: 15,
   },
   statCard: {
     backgroundColor: '#fff',
+    borderRadius: 15,
     padding: 15,
-    borderRadius: 8,
+    width: width * 0.44,
     alignItems: 'center',
-    width: '30%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4c669f',
+    color: '#333',
+    marginTop: 8,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: 14,
     color: '#666',
     marginTop: 4,
-    textAlign: 'center',
-  },
-  actionsContainer: {
-    padding: 20,
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-  },
-  actionButton: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
-    width: '48%',
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  actionButtonText: {
-    marginTop: 8,
-    color: '#4c669f',
-    fontWeight: '500',
   },
   section: {
     padding: 15,
-    backgroundColor: '#fff',
-    borderRadius: 8,
-    marginBottom: 15,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
   },
   sectionTitle: {
     fontSize: 18,
     fontWeight: 'bold',
-    marginBottom: 15,
     color: '#333',
+    marginBottom: 15,
   },
   nurseCard: {
-    flexDirection: 'row',
-    justifyContent: 'space-between',
-    alignItems: 'center',
+    backgroundColor: '#fff',
+    borderRadius: 15,
     padding: 15,
-    backgroundColor: '#f8f9fa',
-    borderRadius: 8,
-    marginBottom: 10,
+    marginBottom: 15,
   },
   nurseInfo: {
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  nurseIconContainer: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: '#2C6EAB',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginRight: 12,
+  },
+  nurseDetails: {
     flex: 1,
   },
   nurseName: {
     fontSize: 16,
-    fontWeight: 'bold',
+    fontWeight: '600',
     color: '#333',
   },
   nurseEmail: {
@@ -348,22 +397,59 @@ const styles = StyleSheet.create({
   },
   nurseRole: {
     fontSize: 14,
-    color: '#4c669f',
+    color: '#2C6EAB',
     marginTop: 2,
   },
   approveButton: {
-    backgroundColor: '#28a745',
-    paddingHorizontal: 15,
+    backgroundColor: '#2C6EAB',
     paddingVertical: 8,
-    borderRadius: 4,
+    paddingHorizontal: 20,
+    borderRadius: 8,
+    marginTop: 12,
+    alignSelf: 'flex-end',
   },
   approveButtonText: {
     color: '#fff',
-    fontWeight: 'bold',
+    fontWeight: '600',
+  },
+  quickActions: {
+    padding: 15,
+  },
+  actionGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    justifyContent: 'space-between',
+  },
+  actionCard: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 15,
+    width: width * 0.44,
+    alignItems: 'center',
+    marginBottom: 15,
+  },
+  actionText: {
+    fontSize: 14,
+    color: '#333',
+    marginTop: 8,
+    textAlign: 'center',
+  },
+  emptyState: {
+    backgroundColor: '#fff',
+    borderRadius: 15,
+    padding: 30,
+    alignItems: 'center',
   },
   emptyText: {
-    textAlign: 'center',
+    fontSize: 16,
     color: '#666',
-    padding: 20,
+    marginTop: 12,
   },
+  elevation: {
+    elevation: 3,
+    shadowColor: '#000',
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.1,
+    shadowRadius: 4,
+  }
 });

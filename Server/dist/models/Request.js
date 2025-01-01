@@ -39,52 +39,51 @@ const requestSchema = new mongoose_1.Schema({
     patient: {
         type: mongoose_1.Schema.Types.ObjectId,
         ref: 'Patient',
-        required: true,
+        required: false
     },
-    nurse: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'Nurse',
-    },
-    type: {
+    fullName: {
         type: String,
-        required: true,
+        required: true
     },
-    priority: {
+    contactNumber: {
         type: String,
-        enum: ['high', 'medium', 'low'],
-        required: true,
+        required: true
     },
-    status: {
+    roomNumber: {
         type: String,
-        enum: ['pending', 'assigned', 'completed', 'cancelled'],
-        default: 'pending',
+        required: true
+    },
+    bedNumber: String,
+    disease: {
+        type: String,
+        required: true
     },
     description: {
         type: String,
-        required: true,
+        default: ''
     },
-    room: {
+    priority: {
         type: String,
-        required: true,
+        enum: ['low', 'medium', 'high', 'critical'],
+        default: 'medium'
     },
-    bedNumber: {
+    status: {
         type: String,
-        required: true,
+        enum: ['pending', 'assigned', 'in_progress', 'completed', 'cancelled'],
+        default: 'pending'
     },
-    responseTime: {
-        type: Date,
+    nurse: {
+        type: mongoose_1.Schema.Types.ObjectId,
+        ref: 'Nurse'
     },
-    completionTime: {
-        type: Date,
-    },
-    notes: {
-        type: String,
-    },
+    assignedAt: Date,
+    completedAt: Date
 }, {
-    timestamps: true,
+    timestamps: true
 });
-// Add index for better query performance
-requestSchema.index({ status: 1, priority: 1, createdAt: -1 });
-requestSchema.index({ patient: 1, status: 1 });
-requestSchema.index({ nurse: 1, status: 1 });
+// Indexes for better query performance
+requestSchema.index({ status: 1, priority: 1 });
+requestSchema.index({ patient: 1 });
+requestSchema.index({ nurse: 1 });
+requestSchema.index({ createdAt: -1 });
 exports.Request = mongoose_1.default.model('Request', requestSchema);

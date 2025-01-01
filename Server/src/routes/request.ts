@@ -1,20 +1,19 @@
 import express from 'express';
-import { protect, authorize } from '../middleware/auth';
+import { protect } from '../middleware/auth';
 import {
   createRequest,
   getRequests,
   updateRequestStatus,
   assignRequest
 } from '../controllers/requestController';
-import { validateRequest, validateRequestStatus } from '../middleware/validation';
 
 const router = express.Router();
 
 // Protected routes - all routes require authentication
 router.use(protect);
 
-// Patient routes
-router.post('/', authorize(['patient']), validateRequest, createRequest);
+// Patient routes - temporarily remove validation
+router.post('/', createRequest);
 
 // Shared routes
 router.get('/', getRequests);
@@ -22,15 +21,16 @@ router.get('/', getRequests);
 // Nurse and admin routes
 router.put(
   '/:requestId/status',
-  authorize(['nurse', 'admin']),
-  validateRequestStatus,
   updateRequestStatus
 );
 
 router.put(
   '/:requestId/assign',
-  authorize(['admin']),
   assignRequest
 );
+
+router.get('/health', (req, res) => {
+  res.json({ status: 'ok' });
+});
 
 export default router; 

@@ -9,168 +9,149 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
     });
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateRequestStatus = exports.assignRequest = exports.getRequests = exports.createRequest = void 0;
+exports.assignRequest = exports.updateRequestStatus = exports.getRequests = exports.createRequest = void 0;
 const Request_1 = require("../models/Request");
-const Patient_1 = require("../models/Patient");
-const Nurse_1 = require("../models/Nurse");
-const AppError_1 = require("../utils/AppError");
 const server_1 = require("../server");
+const AppError_1 = require("../utils/AppError");
+const priorityService_1 = require("../services/priorityService");
 const createRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        if (!req.user) {
-            throw new AppError_1.AppError('Authentication required', 401);
+        const { fullName, contactNumber, roomNumber, bedNumber, disease } = req.body;
+        // Check for duplicate active request
+        const existingRequest = yield Request_1.Request.findOne({
+            fullName,
+            contactNumber,
+            roomNumber,
+            status: { $in: ['pending', 'assigned', 'in_progress'] }
+        });
+        if (existingRequest) {
+            return res.status(400).json({
+                success: false,
+                message: 'An active request already exists for this patient'
+            });
         }
-        const patient = yield Patient_1.Patient.findOne({ user: req.user._id }).populate('user');
-        if (!patient) {
-            throw new AppError_1.AppError('Patient not found', 404);
+        // Create request with AI-generated fields
+        const request = yield Request_1.Request.create(Object.assign({ fullName,
+            contactNumber,
+            roomNumber,
+            bedNumber,
+            disease, status: 'pending' }, (((_a = req.user) === null || _a === void 0 ? void 0 : _a._id) && { patient: req.user._id })));
+        // Generate AI fields asynchronously
+        try {
+            const [priority, description] = yield Promise.all([
+                (0, priorityService_1.getPriority)(disease),
+                (0, priorityService_1.generateDescription)(disease)
+            ]);
+            request.description = description;
+            // Ensure that priority is of the correct type
+            if (['low', 'medium', 'high', 'critical'].includes(priority)) {
+                request.priority = priority; // Ensure the priority type is valid
+            }
+            else {
+                request.priority = 'low'; // Default value if AI fails to provide a valid priority
+            }
+            yield request.save();
         }
-        const request = yield Request_1.Request.create(Object.assign(Object.assign({}, req.body), { patient: patient._id, status: 'pending' }));
-        yield request.populate([
-            { path: 'patient', populate: { path: 'user', select: 'fullName' } },
-            { path: 'nurse', populate: { path: 'user', select: 'fullName' } },
-        ]);
-        server_1.socketService === null || server_1.socketService === void 0 ? void 0 : server_1.socketService.emitToRole('nurse', 'new_request', {
-            request,
-            patient: {
-                id: patient._id,
-                name: patient.user.fullName,
-            },
+        catch (aiError) {
+            console.error('Error generating AI fields:', aiError);
+        }
+        // Emit to nurses via socket
+        server_1.socketService.emitToRole('nurse', 'newRequest', {
+            requestId: request._id,
+            priority: request.priority,
+            disease,
+            patientName: fullName,
+            roomNumber,
+            description: request.description
         });
         res.status(201).json({
             success: true,
-            data: request,
+            data: request
         });
     }
     catch (error) {
-        res.status(400).json({
+        console.error('Error creating request:', error);
+        res.status(500).json({
             success: false,
-            message: error instanceof AppError_1.AppError ? error.message : 'Failed to create request',
+            message: 'Failed to create request'
         });
     }
 });
 exports.createRequest = createRequest;
 const getRequests = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        if (!req.user) {
-            throw new AppError_1.AppError('Authentication required', 401);
-        }
-        let query = {};
-        // If nurse, only show assigned requests
-        if (req.user.role === 'nurse') {
-            const nurse = yield Nurse_1.Nurse.findOne({ user: req.user._id });
-            if (!nurse) {
-                throw new AppError_1.AppError('Nurse not found', 404);
-            }
-            query = { nurse: nurse._id };
-        }
-        // If patient, only show their requests
-        if (req.user.role === 'patient') {
-            const patient = yield Patient_1.Patient.findOne({ user: req.user._id });
-            if (!patient) {
-                throw new AppError_1.AppError('Patient not found', 404);
-            }
-            query = { patient: patient._id };
-        }
-        const requests = yield Request_1.Request.find(query)
-            .populate({
-            path: 'patient',
-            populate: { path: 'user', select: 'fullName' }
-        })
-            .populate({
-            path: 'nurse',
-            populate: { path: 'user', select: 'fullName' }
-        })
-            .sort({ createdAt: -1 });
+        const requests = yield Request_1.Request.find()
+            .populate('patient', 'fullName')
+            .sort('-createdAt');
         res.json({
             success: true,
-            data: requests,
+            data: requests
         });
     }
     catch (error) {
-        res.status(400).json({
+        console.error('Error fetching requests:', error);
+        res.status(500).json({
             success: false,
-            message: error instanceof AppError_1.AppError ? error.message : 'Failed to fetch requests',
+            message: 'Failed to fetch requests'
         });
     }
 });
 exports.getRequests = getRequests;
-const assignRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
-    try {
-        const { requestId, nurseId } = req.body;
-        const request = yield Request_1.Request.findById(requestId);
-        if (!request) {
-            throw new AppError_1.AppError('Request not found', 404);
-        }
-        const nurse = yield Nurse_1.Nurse.findById(nurseId).populate('user');
-        if (!nurse) {
-            throw new AppError_1.AppError('Nurse not found', 404);
-        }
-        request.nurse = nurse._id;
-        request.status = 'assigned';
-        yield request.save();
-        // Notify assigned nurse
-        server_1.socketService === null || server_1.socketService === void 0 ? void 0 : server_1.socketService.emitToUser(nurse.user._id.toString(), 'request_assigned', {
-            request,
-            nurse: { id: nurse._id, name: nurse.user.fullName },
-        });
-        // Notify patient
-        const patient = yield Patient_1.Patient.findById(request.patient).populate('user');
-        if (patient) {
-            server_1.socketService === null || server_1.socketService === void 0 ? void 0 : server_1.socketService.emitToUser(patient.user._id.toString(), 'request_assigned', {
-                request,
-                nurse: { id: nurse._id, name: nurse.user.fullName },
-            });
-        }
-        res.json({
-            success: true,
-            data: request,
-        });
-    }
-    catch (error) {
-        res.status(400).json({
-            success: false,
-            message: error instanceof AppError_1.AppError ? error.message : 'Failed to assign request',
-        });
-    }
-});
-exports.assignRequest = assignRequest;
 const updateRequestStatus = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { requestId, status } = req.body;
+        const { requestId } = req.params;
+        const { status } = req.body;
         const request = yield Request_1.Request.findById(requestId);
         if (!request) {
             throw new AppError_1.AppError('Request not found', 404);
         }
-        const oldStatus = request.status;
         request.status = status;
-        yield request.save();
-        // Notify all relevant parties
-        const patient = yield Patient_1.Patient.findById(request.patient).populate('user');
-        if (patient) {
-            server_1.socketService === null || server_1.socketService === void 0 ? void 0 : server_1.socketService.emitToUser(patient.user._id.toString(), 'request_status_updated', {
-                request,
-                oldStatus,
-                newStatus: status,
-            });
+        if (status === 'completed') {
+            request.completedAt = new Date();
         }
-        const nurse = yield Nurse_1.Nurse.findById(request.nurse).populate('user');
-        if (nurse) {
-            server_1.socketService === null || server_1.socketService === void 0 ? void 0 : server_1.socketService.emitToUser(nurse.user._id.toString(), 'request_status_updated', {
-                request,
-                oldStatus,
-                newStatus: status,
-            });
+        yield request.save();
+        // Notify all connected nurses about the status update
+        server_1.socketService.emitToRole('nurse', 'request_status_updated', request);
+        if (status === 'completed') {
+            server_1.socketService.emitToRole('nurse', 'requestCompleted', request);
         }
         res.json({
             success: true,
-            data: request,
+            data: request
         });
     }
     catch (error) {
-        res.status(400).json({
+        console.error('Error updating request:', error);
+        res.status(500).json({
             success: false,
-            message: error instanceof AppError_1.AppError ? error.message : 'Failed to update request status',
+            message: error instanceof AppError_1.AppError ? error.message : 'Failed to update request'
         });
     }
 });
 exports.updateRequestStatus = updateRequestStatus;
+const assignRequest = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { requestId } = req.params;
+        const { nurseId } = req.body;
+        const request = yield Request_1.Request.findById(requestId);
+        if (!request) {
+            throw new AppError_1.AppError('Request not found', 404);
+        }
+        request.nurse = nurseId;
+        request.status = 'assigned';
+        yield request.save();
+        res.json({
+            success: true,
+            data: request
+        });
+    }
+    catch (error) {
+        console.error('Error assigning request:', error);
+        res.status(500).json({
+            success: false,
+            message: error instanceof AppError_1.AppError ? error.message : 'Failed to assign request'
+        });
+    }
+});
+exports.assignRequest = assignRequest;

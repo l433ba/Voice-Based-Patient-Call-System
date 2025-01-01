@@ -1,3 +1,4 @@
+// Import necessary React and React Native components
 import React, { useState } from 'react';
 import {
   View,
@@ -9,32 +10,38 @@ import {
 } from 'react-native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
 
+// Define the Patient type with required properties
 type Patient = {
   id: string;
   name: string;
   roomNumber: string;
   bedNumber: string;
   disease: string;
-  status: 'stable' | 'critical' | 'recovering';
+  status: 'completed' | 'pending' | 'recovering';
 };
 
+// Main component for displaying the nurse's patient list
 export const MyPatientsScreen = () => {
+  // State for search functionality
   const [searchQuery, setSearchQuery] = useState('');
+  // State for storing patient data
   const [patients, setPatients] = useState<Patient[]>([
     // Dummy data - replace with actual API call
     {
       id: '1',
-      name: 'John Doe',
+      name: 'Kailash maurya',
       roomNumber: '101',
-      bedNumber: 'A',
+      bedNumber: '001',
       disease: 'Diabetes',
-      status: 'stable',
+      status: 'completed',
     },
     // Add more dummy data...
   ]);
 
+  // Component to render individual patient cards
   const renderPatientCard = ({ item }: { item: Patient }) => (
     <TouchableOpacity style={styles.patientCard}>
+      {/* Patient header with name and status */}
       <View style={styles.patientHeader}>
         <Text style={styles.patientName}>{item.name}</Text>
         <View style={[
@@ -45,6 +52,7 @@ export const MyPatientsScreen = () => {
         </View>
       </View>
 
+      {/* Patient details section */}
       <View style={styles.patientInfo}>
         <View style={styles.infoRow}>
           <Icon name="room" size={16} color="#666" />
@@ -56,6 +64,7 @@ export const MyPatientsScreen = () => {
         </View>
       </View>
 
+      {/* Action buttons for patient interaction */}
       <View style={styles.actionButtons}>
         <TouchableOpacity style={styles.actionButton}>
           <Icon name="message" size={20} color="#4c669f" />
@@ -73,6 +82,7 @@ export const MyPatientsScreen = () => {
     </TouchableOpacity>
   );
 
+  // Helper function to determine status color based on patient status
   const getStatusColor = (status: Patient['status']) => {
     switch (status) {
       case 'stable':
@@ -86,8 +96,10 @@ export const MyPatientsScreen = () => {
     }
   };
 
+  // Main render method
   return (
     <View style={styles.container}>
+      {/* Search bar section */}
       <View style={styles.searchContainer}>
         <Icon name="search" size={24} color="#666" style={styles.searchIcon} />
         <TextInput
@@ -98,6 +110,7 @@ export const MyPatientsScreen = () => {
         />
       </View>
 
+      {/* Patient list section */}
       <FlatList
         data={patients}
         renderItem={renderPatientCard}
@@ -108,7 +121,9 @@ export const MyPatientsScreen = () => {
   );
 };
 
+// Styles for the component
 const styles = StyleSheet.create({
+  // Container styles
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -133,6 +148,7 @@ const styles = StyleSheet.create({
     padding: 15,
     gap: 15,
   },
+  // Patient card styles
   patientCard: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -178,6 +194,7 @@ const styles = StyleSheet.create({
     color: '#666',
     fontSize: 14,
   },
+  // Action button styles
   actionButtons: {
     flexDirection: 'row',
     justifyContent: 'space-around',

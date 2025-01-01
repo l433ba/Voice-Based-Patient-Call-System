@@ -1,3 +1,9 @@
+/**
+ * PatientRegistrationScreen.tsx
+ * Screen component for patient registration with form validation and voice recording capability.
+ * Provides a comprehensive registration form with required fields and bilingual disease options.
+ */
+
 import React, { useState } from 'react';
 import {
   View,
@@ -16,6 +22,7 @@ import type { NavigationProp } from '@/types/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 
+// Disease options with bilingual labels (English/Hindi)
 const diseases = [
   'Select Disease',
   'Arthritis (जोड़ की बीमारी)',
@@ -31,13 +38,19 @@ const diseases = [
 ];
 
 export const PatientRegistrationScreen = () => {
+  // Navigation hook for screen transitions
   const navigation = useNavigation<NavigationProp>();
+  // Auth context hook for registration functionality
   const { registerPatient } = useAuth();
+  // State for voice recording feature
   const [isRecording, setIsRecording] = useState(false);
+  
+  // Form data state management
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     fullAddress: '',
     contactNumber: '',
     emergencyContact: '',
@@ -46,6 +59,14 @@ export const PatientRegistrationScreen = () => {
     disease: 'Select Disease',
   });
 
+  // Password visibility toggle states
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  /**
+   * Validates all required form fields before submission
+   * @returns {boolean} Whether the form is valid
+   */
   const validateForm = () => {
     if (!formData.fullName.trim()) {
       Alert.alert('Error', 'Full name is required');
@@ -57,6 +78,10 @@ export const PatientRegistrationScreen = () => {
     }
     if (!formData.password || formData.password.length < 6) {
       Alert.alert('Error', 'Password must be at least 6 characters');
+      return false;
+    }
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
       return false;
     }
     if (!formData.fullAddress.trim()) {
@@ -75,10 +100,6 @@ export const PatientRegistrationScreen = () => {
       Alert.alert('Error', 'Room number is required');
       return false;
     }
-    if (!formData.bedNumber.trim()) {
-      Alert.alert('Error', 'Bed number is required');
-      return false;
-    }
     if (formData.disease === 'Select Disease') {
       Alert.alert('Error', 'Please select a disease');
       return false;
@@ -86,16 +107,25 @@ export const PatientRegistrationScreen = () => {
     return true;
   };
 
+  /**
+   * Handles form submission
+   * Validates form and attempts patient registration
+   */
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     try {
       await registerPatient(formData);
+      
       Toast.show({
         type: 'success',
         text1: 'Registration Successful',
-        text2: 'Welcome to NurseConnect',
+        text2: 'Please login to continue',
       });
+
+      // Navigate to login screen after successful registration
+      navigation.navigate('PatientLogin');
+      
     } catch (error: any) {
       const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       Toast.show({
@@ -107,6 +137,10 @@ export const PatientRegistrationScreen = () => {
     }
   };
 
+  /**
+   * Handles voice recording toggle
+   * Shows toast notification for recording status
+   */
   const handleVoiceRecord = () => {
     setIsRecording(!isRecording);
     // Voice recording logic will be implemented here
@@ -121,6 +155,7 @@ export const PatientRegistrationScreen = () => {
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Patient Registration</Text>
 
+      {/* Voice recording button */}
       <TouchableOpacity 
         style={styles.recordButton}
         onPress={handleVoiceRecord}
@@ -141,22 +176,25 @@ export const PatientRegistrationScreen = () => {
         )}
       </TouchableOpacity>
 
+      {/* Registration form */}
       <View style={styles.form}>
+        {/* Full Name Input */}
         <View style={styles.inputContainer}>
           <Icon name="person" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Full Name"
+            placeholder="Full Name *"
             value={formData.fullName}
             onChangeText={(text) => setFormData({ ...formData, fullName: text })}
           />
         </View>
 
+        {/* Email Input */}
         <View style={styles.inputContainer}>
           <Icon name="email" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Email"
+            placeholder="Email *"
             value={formData.email}
             onChangeText={(text) => setFormData({ ...formData, email: text })}
             keyboardType="email-address"
@@ -164,70 +202,109 @@ export const PatientRegistrationScreen = () => {
           />
         </View>
 
+        {/* Password Input */}
         <View style={styles.inputContainer}>
           <Icon name="lock" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
-            style={styles.input}
-            placeholder="Password"
+            style={[styles.input, { flex: 1 }]}
+            placeholder="Password *"
             value={formData.password}
             onChangeText={(text) => setFormData({ ...formData, password: text })}
-            secureTextEntry
+            secureTextEntry={!showPassword}
           />
+          <TouchableOpacity
+            style={styles.visibilityIcon}
+            onPress={() => setShowPassword(!showPassword)}
+          >
+            <Icon
+              name={showPassword ? "visibility" : "visibility-off"}
+              size={20}
+              color="#666"
+            />
+          </TouchableOpacity>
         </View>
 
+        {/* Confirm Password Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="lock" size={20} color="#666" style={styles.inputIcon} />
+          <TextInput
+            style={[styles.input, { flex: 1 }]}
+            placeholder="Confirm Password *"
+            value={formData.confirmPassword}
+            onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+            secureTextEntry={!showConfirmPassword}
+          />
+          <TouchableOpacity
+            style={styles.visibilityIcon}
+            onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+          >
+            <Icon
+              name={showConfirmPassword ? "visibility" : "visibility-off"}
+              size={20}
+              color="#666"
+            />
+          </TouchableOpacity>
+        </View>
+
+        {/* Address Input */}
         <View style={styles.inputContainer}>
           <Icon name="location-on" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Full Address"
+            placeholder="Full Address *"
             value={formData.fullAddress}
             onChangeText={(text) => setFormData({ ...formData, fullAddress: text })}
             multiline
           />
         </View>
 
+        {/* Contact Number Input */}
         <View style={styles.inputContainer}>
           <Icon name="phone" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Contact Number"
+            placeholder="Contact Number *"
             value={formData.contactNumber}
             onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
             keyboardType="phone-pad"
           />
         </View>
 
+        {/* Emergency Contact Input */}
         <View style={styles.inputContainer}>
           <Icon name="emergency" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Emergency Contact"
+            placeholder="Emergency Contact *"
             value={formData.emergencyContact}
             onChangeText={(text) => setFormData({ ...formData, emergencyContact: text })}
             keyboardType="phone-pad"
           />
         </View>
 
+        {/* Room Number Input */}
         <View style={styles.inputContainer}>
           <Icon name="meeting-room" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Room Number"
+            placeholder="Room Number *"
             value={formData.roomNumber}
             onChangeText={(text) => setFormData({ ...formData, roomNumber: text })}
           />
         </View>
 
+        {/* Bed Number Input */}
         <View style={styles.inputContainer}>
           <Icon name="single-bed" size={20} color="#666" style={styles.inputIcon} />
           <TextInput
             style={styles.input}
-            placeholder="Bed Number"
+            placeholder="Bed Number (Optional)"
             value={formData.bedNumber}
             onChangeText={(text) => setFormData({ ...formData, bedNumber: text })}
           />
         </View>
 
+        {/* Disease Selection Picker */}
         <View style={[styles.inputContainer, styles.pickerContainer]}>
           <Icon name="local-hospital" size={20} color="#666" style={styles.inputIcon} />
           <Picker
@@ -241,14 +318,26 @@ export const PatientRegistrationScreen = () => {
           </Picker>
         </View>
 
+        {/* Submit Button */}
         <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
           <Text style={styles.submitButtonText}>Register</Text>
+        </TouchableOpacity>
+
+        {/* Login Link */}
+        <TouchableOpacity
+          style={styles.loginLink}
+          onPress={() => navigation.navigate('PatientLogin')}
+        >
+          <Text style={styles.loginLinkText}>
+            Already have an account? Login here
+          </Text>
         </TouchableOpacity>
       </View>
     </ScrollView>
   );
 };
 
+// Styles for the PatientRegistrationScreen component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -351,5 +440,21 @@ const styles = StyleSheet.create({
     color: '#fff',
     fontSize: 16,
     fontWeight: '600',
+  },
+  visibilityIcon: {
+    padding: 10,
+  },
+  requiredText: {
+    color: '#ff0000',
+    fontSize: 14,
+    marginLeft: 4,
+  },
+  loginLink: {
+    marginTop: 15,
+    alignItems: 'center',
+  },
+  loginLinkText: {
+    color: '#4c669f',
+    fontSize: 14,
   },
 }); 

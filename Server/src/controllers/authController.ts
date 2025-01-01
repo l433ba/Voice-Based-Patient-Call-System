@@ -4,6 +4,7 @@ import { Patient } from '../models/Patient';
 import { Nurse } from '../models/Nurse';
 import bcrypt from 'bcryptjs';
 import { AppError } from '../utils/AppError';
+import { User } from '../models/User';
 
 export const registerPatient = async (req: Request, res: Response) => {
   try {

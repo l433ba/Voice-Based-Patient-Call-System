@@ -1,21 +1,27 @@
+// Import necessary dependencies from React and React Native
 import React, { useState } from 'react';
 import {
   View,
-  Text,
-  TextInput,
   StyleSheet,
-  TouchableOpacity,
   ScrollView,
   Alert,
 } from 'react-native';
+import {
+  Text,
+  TextInput,
+  Button,
+  useTheme,
+} from 'react-native-paper';
 import { Picker } from '@react-native-picker/picker';
 import { useNavigation } from '@react-navigation/native';
 import type { NavigationProp } from '@/types/navigation';
 import { useAuth } from '@/contexts/AuthContext';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
 import Toast from 'react-native-toast-message';
 
+// Define nurse role options with bilingual labels (English/Hindi)
 const nurseRoles = [
-  { label: 'Select Role', value: '' },
+  { label: 'Select Role *', value: '' },
   { label: 'General Nurse / सामान्य नर्स', value: 'general_nurse' },
   { label: 'Staff Nurse / स्टाफ नर्स', value: 'staff_nurse' },
   { label: 'ICU Nurse / आईसीयू नर्स', value: 'icu_nurse' },
@@ -23,16 +29,26 @@ const nurseRoles = [
 ];
 
 export const NurseRegistrationScreen = () => {
+  // Initialize navigation, auth context and theme
   const navigation = useNavigation<NavigationProp>();
   const { registerNurse } = useAuth();
+  const theme = useTheme();
+  
+  // Initialize form state with empty values
   const [formData, setFormData] = useState({
     fullName: '',
     email: '',
     password: '',
+    confirmPassword: '',
     contactNumber: '',
     nurseRole: '',
   });
 
+  // State for password visibility toggles
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+
+  // Validate all form fields before submission
   const validateForm = () => {
     if (!formData.fullName.trim()) {
       Alert.alert('Error', 'Full name is required');
@@ -46,6 +62,10 @@ export const NurseRegistrationScreen = () => {
       Alert.alert('Error', 'Password must be at least 6 characters');
       return false;
     }
+    if (formData.password !== formData.confirmPassword) {
+      Alert.alert('Error', 'Passwords do not match');
+      return false;
+    }
     if (!formData.contactNumber.trim()) {
       Alert.alert('Error', 'Contact number is required');
       return false;
@@ -57,20 +77,25 @@ export const NurseRegistrationScreen = () => {
     return true;
   };
 
+  // Handle form submission
   const handleSubmit = async () => {
     if (!validateForm()) return;
 
     try {
+      // Attempt to register nurse with provided data
       const response = await registerNurse(formData);
       
+      // Show success message
       Toast.show({
         type: 'success',
         text1: 'Registration Successful',
         text2: 'Please wait for admin approval to login',
       });
 
+      // Navigate to login screen after successful registration
       navigation.navigate('NurseLogin');
     } catch (error: any) {
+      // Handle registration errors
       const errorMessage = error.response?.data?.message || 'Registration failed. Please try again.';
       Toast.show({
         type: 'error',
@@ -83,73 +108,116 @@ export const NurseRegistrationScreen = () => {
   return (
     <ScrollView contentContainerStyle={styles.container}>
       <Text style={styles.heading}>Nurse Registration</Text>
-
       <View style={styles.form}>
-        <TextInput
-          style={styles.input}
-          placeholder="Full Name"
-          value={formData.fullName}
-          onChangeText={(text) => setFormData({ ...formData, fullName: text })}
-        />
+        {/* Full Name Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="account" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Full Name *"
+            value={formData.fullName}
+            onChangeText={(text) => setFormData({ ...formData, fullName: text })}
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Email"
-          value={formData.email}
-          onChangeText={(text) => setFormData({ ...formData, email: text })}
-          keyboardType="email-address"
-          autoCapitalize="none"
-        />
+        {/* Email Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="email" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Email *"
+            value={formData.email}
+            onChangeText={(text) => setFormData({ ...formData, email: text })}
+            keyboardType="email-address"
+            autoCapitalize="none"
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Password"
-          value={formData.password}
-          onChangeText={(text) => setFormData({ ...formData, password: text })}
-          secureTextEntry
-        />
+        {/* Password Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="lock" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Password *"
+            value={formData.password}
+            onChangeText={(text) => setFormData({ ...formData, password: text })}
+            secureTextEntry={!showPassword}
+            right={
+              <TextInput.Icon
+                icon={showPassword ? "eye-off" : "eye"}
+                onPress={() => setShowPassword(!showPassword)}
+              />
+            }
+          />
+        </View>
 
-        <TextInput
-          style={styles.input}
-          placeholder="Contact Number"
-          value={formData.contactNumber}
-          onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
-          keyboardType="phone-pad"
-        />
+        {/* Confirm Password Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="lock-check" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Confirm Password *"
+            value={formData.confirmPassword}
+            onChangeText={(text) => setFormData({ ...formData, confirmPassword: text })}
+            secureTextEntry={!showConfirmPassword}
+            right={
+              <TextInput.Icon
+                icon={showConfirmPassword ? "eye-off" : "eye"}
+                onPress={() => setShowConfirmPassword(!showConfirmPassword)}
+              />
+            }
+          />
+        </View>
 
-        <View style={styles.pickerContainer}>
+        {/* Contact Number Input */}
+        <View style={styles.inputContainer}>
+          <Icon name="phone" size={20} color={theme.colors.primary} style={styles.inputIcon} />
+          <TextInput
+            style={styles.input}
+            placeholder="Contact Number *"
+            value={formData.contactNumber}
+            onChangeText={(text) => setFormData({ ...formData, contactNumber: text })}
+            keyboardType="phone-pad"
+          />
+        </View>
+
+        {/* Nurse Role Picker */}
+        <View style={[styles.inputContainer, styles.pickerContainer]}>
+          <Icon name="doctor" size={20} color={theme.colors.primary} style={styles.inputIcon} />
           <Picker
             selectedValue={formData.nurseRole}
-            style={styles.picker}
             onValueChange={(value) => setFormData({ ...formData, nurseRole: value })}
+            style={styles.picker}
           >
-            {nurseRoles.map((role) => (
-              <Picker.Item
-                key={role.value}
-                label={role.label}
-                value={role.value}
-              />
+            {nurseRoles.map((role, index) => (
+              <Picker.Item key={index} label={role.label} value={role.value} />
             ))}
           </Picker>
         </View>
 
-        <TouchableOpacity style={styles.submitButton} onPress={handleSubmit}>
-          <Text style={styles.submitButtonText}>Register</Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.loginLink}
-          onPress={() => navigation.navigate('NurseLogin')}
+        {/* Submit Button */}
+        <Button
+          mode="contained"
+          onPress={handleSubmit}
+          style={styles.submitButton}
         >
-          <Text style={styles.loginLinkText}>
-            Already have an account? Login here
-          </Text>
-        </TouchableOpacity>
+          Register
+        </Button>
+
+        {/* Login Link */}
+        <Button
+          mode="text"
+          onPress={() => navigation.navigate('NurseLogin')}
+          style={styles.loginLink}
+        >
+          Already have an account? Login here
+        </Button>
       </View>
     </ScrollView>
   );
 };
 
+// Styles for the registration screen components
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,
@@ -165,41 +233,41 @@ const styles = StyleSheet.create({
   form: {
     gap: 15,
   },
-  input: {
-    height: 50,
+  inputContainer: {
+    flexDirection: 'row',
+    alignItems: 'center',
     borderWidth: 1,
     borderColor: '#ddd',
     borderRadius: 8,
-    paddingHorizontal: 15,
+    paddingHorizontal: 10,
+    backgroundColor: '#f8f9fa',
+  },
+  inputIcon: {
+    marginRight: 10,
+    width: 20,
+    textAlign: 'center',
+  },
+  input: {
+    flex: 1,
+    height: 50,
+    fontSize: 16,
+    backgroundColor: 'transparent',
   },
   pickerContainer: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
+    padding: 0,
     overflow: 'hidden',
   },
   picker: {
+    flex: 1,
     height: 50,
+    marginLeft: -8,
   },
   submitButton: {
-    backgroundColor: '#4c669f',
-    height: 50,
-    borderRadius: 8,
-    alignItems: 'center',
-    justifyContent: 'center',
     marginTop: 20,
-  },
-  submitButtonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+    height: 50,
+    justifyContent: 'center',
   },
   loginLink: {
-    marginTop: 20,
-    alignItems: 'center',
-  },
-  loginLinkText: {
-    color: '#4c669f',
-    fontSize: 14,
+    marginTop: 15,
   },
 }); 

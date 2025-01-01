@@ -12,44 +12,183 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
     return (mod && mod.__esModule) ? mod : { "default": mod };
 };
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.updateProfile = exports.getProfile = exports.resetPassword = exports.forgotPassword = exports.login = exports.register = void 0;
-const User_1 = require("../models/User");
-const AppError_1 = require("../utils/AppError");
+exports.updateProfile = exports.getProfile = exports.resetPassword = exports.forgotPassword = exports.login = exports.registerNurse = exports.registerPatient = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const register = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+const Patient_1 = require("../models/Patient");
+const Nurse_1 = require("../models/Nurse");
+const bcryptjs_1 = __importDefault(require("bcryptjs"));
+const AppError_1 = require("../utils/AppError");
+const User_1 = require("../models/User");
+const registerPatient = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const user = yield User_1.User.create(req.body);
-        const token = jsonwebtoken_1.default.sign({ _id: user._id }, process.env.JWT_SECRET);
+        const { fullName, email, password, fullAddress, contactNumber, emergencyContact, roomNumber, bedNumber, disease } = req.body;
+        // Check if email exists
+        const existingPatient = yield Patient_1.Patient.findOne({ email });
+        if (existingPatient) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered'
+            });
+        }
+        // Hash password
+        const salt = yield bcryptjs_1.default.genSalt(10);
+        const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
+        // Create patient
+        const patient = yield Patient_1.Patient.create({
+            fullName,
+            email,
+            password: hashedPassword,
+            fullAddress,
+            contactNumber,
+            emergencyContact,
+            roomNumber,
+            bedNumber,
+            disease,
+            role: 'patient'
+        });
+        // Generate token
+        const token = jsonwebtoken_1.default.sign({ id: patient._id, role: 'patient' }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+        // Send response with token and user data
         res.status(201).json({
             success: true,
-            data: { token, user },
+            data: {
+                token,
+                user: {
+                    id: patient._id,
+                    fullName: patient.fullName,
+                    email: patient.email,
+                    role: 'patient'
+                }
+            }
         });
     }
     catch (error) {
-        res.status(400).json({
+        console.error('Patient registration error:', error);
+        res.status(500).json({
             success: false,
-            message: 'Registration failed',
+            message: error.message || 'Registration failed'
         });
     }
 });
-exports.register = register;
-const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+exports.registerPatient = registerPatient;
+const registerNurse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const { email, password } = req.body;
-        const user = yield User_1.User.findOne({ email });
-        if (!user || !(yield user.comparePassword(password))) {
-            throw new AppError_1.AppError('Invalid credentials', 401);
+        const { fullName, email, password, contactNumber, nurseRole } = req.body;
+        // Validate required fields
+        if (!fullName || !email || !password || !contactNumber || !nurseRole) {
+            return res.status(400).json({
+                success: false,
+                message: 'All fields are required'
+            });
         }
-        const token = jsonwebtoken_1.default.sign({ _id: user._id }, process.env.JWT_SECRET);
-        res.json({
+        // Check if email exists
+        const existingNurse = yield Nurse_1.Nurse.findOne({ email });
+        if (existingNurse) {
+            return res.status(400).json({
+                success: false,
+                message: 'Email already registered'
+            });
+        }
+        // Hash password
+        const salt = yield bcryptjs_1.default.genSalt(10);
+        const hashedPassword = yield bcryptjs_1.default.hash(password, salt);
+        // Create nurse
+        const nurse = yield Nurse_1.Nurse.create({
+            fullName,
+            email,
+            password: hashedPassword,
+            contactNumber,
+            nurseRole,
+            status: 'pending',
+            role: 'nurse'
+        });
+        res.status(201).json({
             success: true,
-            data: { token, user },
+            message: 'Registration successful. Please wait for admin approval.',
+            data: {
+                id: nurse._id,
+                fullName: nurse.fullName,
+                email: nurse.email,
+                role: 'nurse'
+            }
         });
     }
     catch (error) {
-        res.status(401).json({
+        console.error('Nurse registration error:', error);
+        res.status(500).json({
             success: false,
-            message: 'Login failed',
+            message: 'Registration failed'
+        });
+    }
+});
+exports.registerNurse = registerNurse;
+const login = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    try {
+        const { email, password } = req.body;
+        // Admin login
+        if (email === 'admin' && password === 'admin') {
+            const token = jsonwebtoken_1.default.sign({ id: 'admin', role: 'admin' }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+            return res.json({
+                success: true,
+                data: {
+                    token,
+                    user: {
+                        id: 'admin',
+                        email: 'admin',
+                        fullName: 'Administrator',
+                        role: 'admin'
+                    }
+                }
+            });
+        }
+        // First check if it's a nurse trying to login
+        let user = yield Nurse_1.Nurse.findOne({ email });
+        let role = 'nurse';
+        // If not a nurse, check if it's a patient
+        if (!user) {
+            user = yield Patient_1.Patient.findOne({ email });
+            role = 'patient';
+        }
+        if (!user) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+        // Verify password
+        const isPasswordValid = yield bcryptjs_1.default.compare(password, user.password);
+        if (!isPasswordValid) {
+            return res.status(401).json({
+                success: false,
+                message: 'Invalid email or password'
+            });
+        }
+        // For nurse, check approval status
+        if (role === 'nurse') {
+            const nurseUser = user;
+            if (nurseUser.status !== 'approved') {
+                return res.status(403).json({
+                    success: false,
+                    message: 'Your account is pending approval. Please wait for admin approval.'
+                });
+            }
+        }
+        // Generate token
+        const token = jsonwebtoken_1.default.sign({ id: user._id, role }, process.env.JWT_SECRET, { expiresIn: process.env.JWT_EXPIRES_IN });
+        // Send response
+        res.json({
+            success: true,
+            data: {
+                token,
+                user: Object.assign({ id: user._id, fullName: user.fullName, email: user.email, role }, (role === 'nurse' && { nurseRole: user.nurseRole }))
+            }
+        });
+    }
+    catch (error) {
+        console.error('Login error:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Login failed. Please try again.'
         });
     }
 });

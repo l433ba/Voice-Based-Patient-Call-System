@@ -8,12 +8,12 @@ import { RootNavigator } from './src/navigation/RootNavigator';
 export default function App() {
   return (
     <SafeAreaProvider>
-      <NavigationContainer>
-        <AuthProvider>
+      <AuthProvider>
+        <NavigationContainer>
           <RootNavigator />
-        </AuthProvider>
+        </NavigationContainer>
         <Toast />
-      </NavigationContainer>
+      </AuthProvider>
     </SafeAreaProvider>
   );
 }

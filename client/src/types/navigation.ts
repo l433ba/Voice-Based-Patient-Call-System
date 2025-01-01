@@ -1,27 +1,46 @@
-import { NativeStackNavigationProp } from '@react-navigation/native-stack';
+import { NavigationProp as ReactNavigationProp } from '@react-navigation/native';
 
 export type RootStackParamList = {
+  // Auth Screens
   Welcome: undefined;
-  Login: undefined;
-  Register: undefined;
+  PatientLogin: undefined;
   NurseLogin: undefined;
-  NurseRegistration: undefined;
   AdminLogin: undefined;
   PatientRegistration: undefined;
-  PatientDashboard: undefined;
-  NurseDashboard: undefined;
+  NurseRegistration: undefined;
+
+  // Main App Screens
+  NurseApp: undefined;
   AdminDashboard: undefined;
-  MyPatients: undefined;
+  PatientDashboard: undefined;
+
+  // Nurse Screens
+  NurseDashboard: undefined;
   ActiveRequests: undefined;
+  CompletedRequests: undefined;
+  MyPatients: undefined;
   Schedule: undefined;
-  Profile: undefined;
-  ForgotPassword: undefined;
-  NurseApproval: undefined;
-  RequestManagement: undefined;
-  Reports: undefined;
-  Settings: undefined;
+  NurseProfile: undefined;
+  CompletedTasks: undefined;
+
+  // Patient Screens
   NewRequest: undefined;
   MyRequests: undefined;
+  MedicalRecords: undefined;
+  Appointments: undefined;
+  Medications: undefined;
+  PatientProfile: undefined;
+  Chat: undefined;
+  ChatBubble: undefined;
+
+  // Admin Screens
+  ManageNurses: undefined;
+  ManagePatients: undefined;
+  SystemSettings: undefined;
+  RequestManagement: undefined;
+  NurseApproval: undefined;
+  Reports: undefined;
+  
 };
 
-export type NavigationProp = NativeStackNavigationProp<RootStackParamList>; 
+export type NavigationProp = ReactNavigationProp<RootStackParamList>;

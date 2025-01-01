@@ -7,6 +7,8 @@ export interface INurse extends Document {
   contactNumber: string;
   nurseRole: string;
   status: 'pending' | 'approved' | 'rejected';
+  assignedPatients?: Schema.Types.ObjectId[];
+  user?: Schema.Types.ObjectId;
 }
 
 const nurseSchema = new Schema({

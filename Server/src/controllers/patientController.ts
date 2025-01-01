@@ -62,22 +62,16 @@ export const registerPatient = async (req: Request, res: Response) => {
 
 export const getPatients = async (req: Request, res: Response) => {
   try {
-    const patients = await User.find({ role: 'patient' })
-      .select('-password')
-      .populate({
-        path: 'patient',
-        select: 'medicalHistory emergencyContact'
-      });
-
+    const patients = await Patient.find({});
     res.json({
       success: true,
       data: patients
     });
   } catch (error) {
-    console.error('Error fetching patients:', error);
     res.status(500).json({
       success: false,
-      message: 'Failed to fetch patients'
+      message: 'Error fetching patients',
+      error: error.message
     });
   }
 };

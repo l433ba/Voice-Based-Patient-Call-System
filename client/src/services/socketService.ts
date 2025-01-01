@@ -1,92 +1,41 @@
-import { io, Socket } from 'socket.io-client';
-import AsyncStorage from '@react-native-async-storage/async-storage';
-import { SOCKET_URL } from '@/config';
-import { RequestResponse } from '@/types/api';
+import io from 'socket.io-client';
+import { API_URL } from '../config';
 
-export class SocketService {
-  private socket: Socket | null = null;
-  private static instance: SocketService;
+let socket = io(API_URL, {
+  autoConnect: false,
+  transports: ['websocket'],
+  reconnection: true,
+  reconnectionDelay: 1000,
+  reconnectionDelayMax: 5000,
+  reconnectionAttempts: 5
+});
 
-  private constructor() {}
+export const initializeSocket = (token: string) => {
+  if (socket.disconnected) {
+    socket.auth = { token };
+    socket.connect();
 
-  static getInstance(): SocketService {
-    if (!SocketService.instance) {
-      SocketService.instance = new SocketService();
-    }
-    return SocketService.instance;
-  }
+    socket.on('connect', () => {
+      console.log('Socket connected successfully');
+    });
 
-  async connect() {
-    try {
-      const token = await AsyncStorage.getItem('token');
-      if (!token) return;
-
-      this.socket = io(SOCKET_URL, {
-        auth: { token },
-        transports: ['websocket'],
-      });
-
-      this.setupEventListeners();
-    } catch (error) {
+    socket.on('connect_error', (error) => {
       console.error('Socket connection error:', error);
-    }
-  }
-
-  disconnect() {
-    if (this.socket) {
-      this.socket.disconnect();
-      this.socket = null;
-    }
-  }
-
-  private setupEventListeners() {
-    if (!this.socket) return;
-
-    this.socket.on('connect', () => {
-      console.log('Socket connected');
     });
 
-    this.socket.on('disconnect', () => {
-      console.log('Socket disconnected');
+    socket.on('disconnect', (reason) => {
+      console.log('Socket disconnected:', reason);
+      if (reason === 'io server disconnect') {
+        socket.connect();
+      }
     });
-
-    this.socket.on('error', (error) => {
-      console.error('Socket error:', error);
-    });
   }
+};
 
-  // Event listeners for requests
-  onNewRequest(callback: (data: { request: RequestResponse; patient: any }) => void) {
-    if (!this.socket) return;
-    this.socket.on('new_request', callback);
+export const disconnectSocket = () => {
+  if (socket.connected) {
+    socket.disconnect();
   }
+};
 
-  onRequestAssigned(callback: (data: { request: RequestResponse; nurse: any }) => void) {
-    if (!this.socket) return;
-    this.socket.on('request_assigned', callback);
-  }
-
-  onRequestStatusUpdated(
-    callback: (data: { 
-      request: RequestResponse; 
-      oldStatus: string; 
-      newStatus: string 
-    }) => void
-  ) {
-    if (!this.socket) return;
-    this.socket.on('request_status_updated', callback);
-  }
-
-  onNurseRegistered(callback: () => void) {
-    if (!this.socket) return;
-    this.socket.on('nurse_registered', callback);
-  }
-
-  // Remove event listeners
-  removeListener(event: string) {
-    if (!this.socket) return;
-    this.socket.off(event);
-  }
-}
-
-export const socketService = SocketService.getInstance(); 
+export { socket };

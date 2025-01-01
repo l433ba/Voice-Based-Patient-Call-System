@@ -1,15 +1,28 @@
+/**
+ * Authentication Context Provider and Hook
+ * Manages user authentication state, login/logout functionality, and user registration
+ */
+
 import React, { createContext, useState, useContext, useEffect } from 'react';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { authApi } from '../services/api';
 import Toast from 'react-native-toast-message';
 
+/**
+ * Interface defining the structure of a User object
+ */
 interface User {
   id: string;
-  email: string;
   fullName: string;
-  role: 'patient' | 'nurse' | 'admin';
+  email: string;
+  role: string;
+  contactNumber: string;
+  nurseRole?: string; // Optional field for nurse users
 }
 
+/**
+ * Interface defining the authentication context shape and available methods
+ */
 interface AuthContextType {
   isAuthenticated: boolean;
   user: User | null;
@@ -19,6 +32,9 @@ interface AuthContextType {
   registerNurse: (data: NurseRegistrationData) => Promise<void>;
 }
 
+/**
+ * Interface for patient registration data
+ */
 interface PatientRegistrationData {
   fullName: string;
   email: string;
@@ -31,6 +47,9 @@ interface PatientRegistrationData {
   disease: string;
 }
 
+/**
+ * Interface for nurse registration data
+ */
 interface NurseRegistrationData {
   fullName: string;
   email: string;
@@ -39,16 +58,25 @@ interface NurseRegistrationData {
   nurseRole: string;
 }
 
+// Create the authentication context with undefined default value
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
 
+/**
+ * AuthProvider component that wraps the app and provides authentication context
+ */
 export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children }) => {
+  // State for tracking authentication status and user data
   const [isAuthenticated, setIsAuthenticated] = useState(false);
   const [user, setUser] = useState<User | null>(null);
 
+  // Check authentication status on component mount
   useEffect(() => {
     checkAuth();
   }, []);
 
+  /**
+   * Checks if user is already authenticated by verifying stored token and user data
+   */
   const checkAuth = async () => {
     try {
       const token = await AsyncStorage.getItem('token');
@@ -63,6 +91,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /**
+   * Handles user login by validating credentials and storing authentication data
+   */
   const login = async (email: string, password: string) => {
     try {
       const response = await authApi.login({ email, password });
@@ -73,12 +104,15 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
 
       const { token, user } = response.data.data;
 
+      // Store authentication data
       await AsyncStorage.setItem('token', token);
       await AsyncStorage.setItem('user', JSON.stringify(user));
 
+      // Update authentication state
       setIsAuthenticated(true);
       setUser(user);
 
+      // Show success message
       Toast.show({
         type: 'success',
         text1: 'Login Successful',
@@ -91,6 +125,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /**
+   * Handles user logout by clearing stored authentication data
+   */
   const logout = async () => {
     try {
       await AsyncStorage.removeItem('token');
@@ -109,6 +146,9 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  /**
+   * Handles patient registration without automatic login
+   */
   const registerPatient = async (data: PatientRegistrationData) => {
     try {
       const response = await authApi.registerPatient(data);
@@ -117,19 +157,19 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
         throw new Error(response.data.message || 'Registration failed');
       }
 
-      const { token, user } = response.data.data;
-
-      await AsyncStorage.setItem('token', token);
-      await AsyncStorage.setItem('user', JSON.stringify(user));
-
-      setIsAuthenticated(true);
-      setUser(user);
+      // Remove automatic login after registration
+      // Just return the success response
+      return response.data;
+      
     } catch (error) {
       console.error('Patient registration failed:', error);
       throw error;
     }
   };
 
+  /**
+   * Handles nurse registration (does not automatically log in the nurse)
+   */
   const registerNurse = async (data: NurseRegistrationData) => {
     try {
       await authApi.registerNurse(data);
@@ -139,6 +179,7 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     }
   };
 
+  // Provide authentication context to child components
   return (
     <AuthContext.Provider value={{ 
       isAuthenticated, 
@@ -153,6 +194,10 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
   );
 };
 
+/**
+ * Custom hook to use authentication context
+ * Throws error if used outside AuthProvider
+ */
 export const useAuth = () => {
   const context = useContext(AuthContext);
   if (!context) {

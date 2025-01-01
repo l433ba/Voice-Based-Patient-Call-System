@@ -1,286 +1,266 @@
-import React, { useState, useEffect } from 'react';
+// Import necessary dependencies from React and React Native
+import React, { useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
-  ScrollView,
   TouchableOpacity,
-  RefreshControl,
-  Alert,
+  ScrollView,
+  StatusBar,
+  useWindowDimensions,
 } from 'react-native';
-import { useNavigation } from '@react-navigation/native';
-import Icon from 'react-native-vector-icons/MaterialIcons';
-import type { NavigationProp } from '@/types/navigation';
-import { useAuth } from '@/contexts/AuthContext';
-import { requestApi } from '@/services/api';
+import { NavigationProp, useNavigation } from '@react-navigation/native';
+import { useAuth } from '../../contexts/AuthContext';
+import { Surface, IconButton } from 'react-native-paper';
+import Icon from 'react-native-vector-icons/MaterialCommunityIcons';
+import { LinearGradient } from 'expo-linear-gradient';
+import { RootStackParamList } from '../../types/navigation';
 import Toast from 'react-native-toast-message';
+import { RequestDialog } from './RequestDialog';
 
-interface Request {
-  _id: string;
-  description: string;
-  priority: 'low' | 'medium' | 'high';
-  status: 'pending' | 'assigned' | 'in_progress' | 'completed' | 'cancelled';
-  createdAt: string;
+/**
+ * PatientDashboard Component
+ * Main dashboard screen for patients showing various healthcare options and services
+ */
+export const PatientDashboard: React.FC = () => {
+  // Navigation and authentication hooks
+  const navigation = useNavigation<NavigationProp<RootStackParamList>>();
+  const { user, logout } = useAuth();
+  const { width } = useWindowDimensions();
+  
+  // State for managing nurse request dialog visibility
+  const [requestDialogVisible, setRequestDialogVisible] = useState(false);
+
+  /**
+   * Handles the submission of a nurse request
+   * @param data - The request data submitted through the dialog
+   */
+  const handleRequestSubmit = (data: any) => {
+    console.log('Request data:', data);
+    setRequestDialogVisible(false);
+    
+    // Show success message using Toast
+    Toast.show({
+      type: 'success',
+      text1: 'Request Submitted Successfully',
+      text2: 'A nurse will arrive shortly to assist you.',
+      visibilityTime: 4000,
+      position: 'top',
+      topOffset: 60,
+    });
+  };
+
+  // Define menu items for the dashboard grid
+  // Each item represents a different service or feature available to patients
+  const menuItems = [
+    {
+      title: 'Medical Assistant',
+      description: 'Chat with our AI medical assistant',
+      icon: 'robot',
+      screen: 'ChatScreen',
+      gradient: ['#6DD5FA', '#2980B9'] as const,
+    },
+    {
+      title: 'Request a Nurse',
+      description: 'Request a nurse to help you',
+      icon: 'hospital-box',
+      onPress: () => setRequestDialogVisible(true),
+      gradient: ['#7CB342', '#558B2F'] as const,
+    },
+    {
+      title: 'My Appointments',
+      description: 'View and manage your appointments',
+      icon: 'calendar-clock',
+      screen: 'AppointmentScreen',
+      gradient: ['#FF6B6B', '#FF8E8E'] as const,
+    },
+    {
+      title: 'My Profile',
+      description: 'View and update your profile',
+      icon: 'account-circle',
+      screen: 'PatientProfileScreen',
+      gradient: ['#4ECDC4', '#45B7AF'] as const,
+    },
+    {
+      title: 'Medical Records',
+      description: 'Access your medical history',
+      icon: 'file-document',
+      screen: 'MedicalRecordsScreen',
+      gradient: ['#6C63FF', '#5A52E5'] as const,
+    },
+    {
+      title: 'Medications',
+      description: 'View your prescribed medications',
+      icon: 'pill',
+      screen: 'MedicationsScreen',
+      gradient: ['#FFD93D', '#F4C430'] as const,
+    },
+    {
+      title: 'Emergency',
+      description: 'Quick access to emergency services',
+      icon: 'alert',
+      screen: 'EmergencyScreen',
+      gradient: ['#FF416C', '#FF4B2B'] as const,
+    },
+    {
+      title: 'My Requests',
+      description: 'View your nurse requests',
+      icon: 'history',
+      screen: 'MyRequestsScreen',
+      gradient: ['#A8E6CF', '#7DBE9B'] as const,
+    },
+  ] as const;
+
+  // Render the dashboard UI
+  return (
+    <View style={styles.container}>
+      <StatusBar barStyle="light-content" />
+      {/* Header section with gradient background */}
+      <LinearGradient
+       colors={['#2C6EAB', '#4c669f']}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
+        <View style={[styles.headerContent, styles.headerBlur]}>
+          <View>
+            <Text style={styles.welcomeText}>
+              Welcome <Text style={styles.boldText}>{user?.fullName}</Text>
+            </Text>
+          </View>
+          <IconButton
+            icon="logout"
+            iconColor="red"
+            size={24}
+            onPress={logout}
+            style={styles.logoutButton}
+          />
+        </View>
+      </LinearGradient>
+
+      {/* Scrollable grid of menu items */}
+      <ScrollView style={styles.content} showsVerticalScrollIndicator={false}>
+        <View style={styles.gridContainer}>
+          {menuItems.map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={[styles.gridItem, { width: width / 2 - 24 }]}
+              onPress={() => {
+                if (item.onPress) {
+                  item.onPress();
+                } else if (item.screen) {
+                  navigation.navigate(item.screen as never);
+                }
+              }}
+            >
+              <Surface style={styles.surface}>
+                <LinearGradient
+                  colors={item.gradient}
+                  style={styles.cardGradient}
+                  start={{ x: 0, y: 0 }}
+                  end={{ x: 1, y: 1 }}
+                >
+                  <View style={styles.iconContainer}>
+                    <Icon name={item.icon} size={32} color="#fff" />
+                  </View>
+                  <Text style={styles.cardTitle}>{item.title}</Text>
+                  <Text style={styles.cardDescription} numberOfLines={2}>
+                    {item.description}
+                  </Text>
+                </LinearGradient>
+              </Surface>
+            </TouchableOpacity>
+          ))}
+        </View>
+      </ScrollView>
+
+      {/* Nurse request dialog and Toast components */}
+      <RequestDialog
+        visible={requestDialogVisible}
+        onDismiss={() => setRequestDialogVisible(false)}
+        onSubmit={handleRequestSubmit}
+      />
+      <Toast />
+    </View>
+  );
 }
 
-export const PatientDashboard = () => {
-  const navigation = useNavigation<NavigationProp>();
-  const { user, logout } = useAuth();
-  const [activeRequests, setActiveRequests] = useState<Request[]>([]);
-  const [refreshing, setRefreshing] = useState(false);
-
-  const fetchRequests = async () => {
-    try {
-      const response = await requestApi.getRequests();
-      if (response.data.success) {
-        setActiveRequests(response.data.data || []);
-      }
-    } catch (error) {
-      console.error('Error fetching requests:', error);
-      Toast.show({
-        type: 'error',
-        text1: 'Error',
-        text2: 'Failed to load requests',
-      });
-    }
-  };
-
-  const onRefresh = async () => {
-    setRefreshing(true);
-    await fetchRequests();
-    setRefreshing(false);
-  };
-
-  const handleLogout = async () => {
-    Alert.alert(
-      'Logout',
-      'Are you sure you want to logout?',
-      [
-        {
-          text: 'Cancel',
-          style: 'cancel'
-        },
-        {
-          text: 'Logout',
-          onPress: async () => {
-            try {
-              await logout();
-              // Navigation will be handled by AuthContext
-            } catch (error) {
-              Toast.show({
-                type: 'error',
-                text1: 'Logout Failed',
-                text2: 'Please try again',
-              });
-            }
-          },
-          style: 'destructive'
-        }
-      ]
-    );
-  };
-
-  useEffect(() => {
-    fetchRequests();
-  }, []);
-
-  return (
-    <ScrollView 
-      style={styles.container}
-      refreshControl={
-        <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
-      }
-    >
-      <View style={styles.header}>
-        <View style={styles.profileSection}>
-          <View>
-            <Text style={styles.welcomeText}>Welcome, {user?.fullName}</Text>
-            <Text style={styles.emailText}>{user?.email}</Text>
-          </View>
-          <TouchableOpacity 
-            style={styles.logoutButton}
-            onPress={handleLogout}
-          >
-            <Icon name="logout" size={24} color="#ff4444" />
-          </TouchableOpacity>
-        </View>
-      </View>
-
-      <View style={styles.actionsContainer}>
-        <TouchableOpacity 
-          style={styles.actionButton}
-          onPress={() => navigation.navigate('NewRequest')}
-        >
-          <Icon name="add-circle-outline" size={24} color="#4c669f" />
-          <Text style={styles.actionButtonText}>New Request</Text>
-        </TouchableOpacity>
-      </View>
-
-      <View style={styles.requestsContainer}>
-        <Text style={styles.sectionTitle}>Active Requests</Text>
-        {activeRequests.length === 0 ? (
-          <View style={styles.emptyState}>
-            <Text style={styles.emptyStateText}>No active requests</Text>
-          </View>
-        ) : (
-          activeRequests.map((request) => (
-            <View key={request._id} style={styles.requestCard}>
-              <Text style={styles.requestDescription}>{request.description}</Text>
-              <View style={styles.requestDetails}>
-                <Text style={[
-                  styles.priorityBadge,
-                  { backgroundColor: getPriorityColor(request.priority) }
-                ]}>
-                  {request.priority.toUpperCase()}
-                </Text>
-                <Text style={styles.requestTime}>
-                  {new Date(request.createdAt).toLocaleString()}
-                </Text>
-              </View>
-              <Text style={[
-                styles.statusBadge,
-                { backgroundColor: getStatusColor(request.status) }
-              ]}>
-                {request.status.toUpperCase()}
-              </Text>
-            </View>
-          ))
-        )}
-      </View>
-    </ScrollView>
-  );
-};
-
-const getPriorityColor = (priority: string) => {
-  switch (priority) {
-    case 'high': return '#ff4444';
-    case 'medium': return '#ffbb33';
-    case 'low': return '#00C851';
-    default: return '#4c669f';
-  }
-};
-
-const getStatusColor = (status: string) => {
-  switch (status) {
-    case 'completed': return '#00C851';
-    case 'in_progress': return '#33b5e5';
-    case 'assigned': return '#ffbb33';
-    case 'cancelled': return '#ff4444';
-    default: return '#4c669f';
-  }
-};
-
+// Styles for the dashboard components
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: '#f5f5f5',
+    backgroundColor: '#f8f9fa',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    paddingTop: 1,
+    paddingBottom: 1,
   },
-  profileSection: {
+  headerBlur: {
+    backgroundColor: 'rgba(255,255,255,0.1)',
+    padding: 10,
+  },
+  headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
   },
   welcomeText: {
     fontSize: 24,
-    fontWeight: 'bold',
-    color: '#333',
+    color: 'rgba(255,255,255,0.9)',
   },
-  emailText: {
-    fontSize: 14,
-    color: '#666',
-    marginTop: 4,
+  boldText: {
+    fontWeight: 'bold',
+    color: '#fff',
   },
   logoutButton: {
-    padding: 8,
-    borderRadius: 8,
-    backgroundColor: '#fff5f5',
+    backgroundColor: 'rgba(255,255,255,0.1)',
   },
-  actionsContainer: {
-    padding: 20,
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  gridContainer: {
     flexDirection: 'row',
-    justifyContent: 'space-around',
-  },
-  actionButton: {
-    alignItems: 'center',
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-    width: '45%',
-  },
-  actionButtonText: {
-    marginTop: 8,
-    color: '#4c669f',
-    fontWeight: '500',
-  },
-  requestsContainer: {
-    padding: 20,
-  },
-  sectionTitle: {
-    fontSize: 20,
-    fontWeight: 'bold',
-    marginBottom: 15,
-    color: '#333',
-  },
-  emptyState: {
-    padding: 20,
-    alignItems: 'center',
-  },
-  emptyStateText: {
-    color: '#666',
-    fontSize: 16,
-  },
-  requestCard: {
-    backgroundColor: '#fff',
-    padding: 15,
-    borderRadius: 8,
-    marginBottom: 10,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
-    elevation: 3,
-  },
-  requestDescription: {
-    fontSize: 16,
-    marginBottom: 10,
-    color: '#333',
-  },
-  requestDetails: {
-    flexDirection: 'row',
+    flexWrap: 'wrap',
     justifyContent: 'space-between',
+    alignItems: 'flex-start',
+  },
+  gridItem: {
+    marginBottom: 16,
+  },
+  surface: {
+    borderRadius: 16,
+    elevation: 4,
+    overflow: 'hidden',
+    backgroundColor: 'transparent',
+  },
+  cardGradient: {
+    padding: 16,
+    height: 160,
+    justifyContent: 'center',
     alignItems: 'center',
-    marginBottom: 10,
   },
-  priorityBadge: {
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
-    color: '#fff',
-    fontSize: 12,
+  iconContainer: {
+    width: 56,
+    height: 56,
+    borderRadius: 28,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    justifyContent: 'center',
+    alignItems: 'center',
+    marginBottom: 12,
+  },
+  cardTitle: {
+    fontSize: 16,
     fontWeight: 'bold',
-  },
-  requestTime: {
-    color: '#666',
-    fontSize: 12,
-  },
-  statusBadge: {
-    alignSelf: 'flex-start',
-    paddingHorizontal: 8,
-    paddingVertical: 4,
-    borderRadius: 4,
     color: '#fff',
-    fontSize: 12,
-    fontWeight: 'bold',
+    marginTop: 8,
+    textAlign: 'center',
   },
-}); 
+  cardDescription: {
+    fontSize: 12,
+    color: '#fff',
+    opacity: 0.9,
+    textAlign: 'center',
+    marginTop: 4,
+  },
+});

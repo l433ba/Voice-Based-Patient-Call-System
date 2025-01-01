@@ -1,3 +1,4 @@
+// Import necessary dependencies from React and React Native
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -12,15 +13,19 @@ import { nurseApi } from '@/services/api';
 import Toast from 'react-native-toast-message';
 import { NurseResponse } from '@/types/api';
 
+// Main component for handling nurse approval workflow
 export const NurseApprovalScreen = () => {
+  // State management for nurse applications, loading state, and errors
   const [applications, setApplications] = useState<NurseResponse[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
+  // Fetch nurses data on component mount
   useEffect(() => {
     fetchNurses();
   }, []);
 
+  // Function to fetch nurse applications from the API
   const fetchNurses = async () => {
     try {
       setError(null);
@@ -34,6 +39,7 @@ export const NurseApprovalScreen = () => {
     }
   };
 
+  // Handler for approving a nurse application
   const handleApprove = async (id: string) => {
     try {
       await nurseApi.approveNurse(id);
@@ -53,14 +59,16 @@ export const NurseApprovalScreen = () => {
     }
   };
 
+  // Loading state UI
   if (isLoading) {
     return (
       <View style={styles.centerContainer}>
-        <ActivityIndicator size="large" color="#4c669f" />
+        <ActivityIndicator size={36} color="#4c669f" />
       </View>
     );
   }
 
+  // Error state UI
   if (error) {
     return (
       <View style={styles.centerContainer}>
@@ -72,8 +80,10 @@ export const NurseApprovalScreen = () => {
     );
   }
 
+  // Render individual nurse application card
   const renderApplicationCard = ({ item }: { item: NurseResponse }) => (
     <View style={styles.card}>
+      {/* Header section with nurse info and status */}
       <View style={styles.cardHeader}>
         <View style={styles.userInfo}>
           <View style={styles.avatar}>
@@ -92,6 +102,7 @@ export const NurseApprovalScreen = () => {
         </View>
       </View>
 
+      {/* Details section with role, experience, and application date */}
       <View style={styles.detailsContainer}>
         <View style={styles.detailRow}>
           <Icon name="work" size={16} color="#666" />
@@ -107,6 +118,7 @@ export const NurseApprovalScreen = () => {
         </View>
       </View>
 
+      {/* Action buttons for pending applications */}
       {item.status === 'pending' && (
         <View style={styles.actions}>
           <TouchableOpacity
@@ -128,6 +140,7 @@ export const NurseApprovalScreen = () => {
     </View>
   );
 
+  // Helper function to determine status badge color
   const getStatusColor = (status: NurseResponse['status']) => {
     switch (status) {
       case 'approved':
@@ -139,6 +152,7 @@ export const NurseApprovalScreen = () => {
     }
   };
 
+  // Main render
   return (
     <View style={styles.container}>
       <FlatList
@@ -151,6 +165,7 @@ export const NurseApprovalScreen = () => {
   );
 };
 
+// Styles for the component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
@@ -270,7 +285,8 @@ const styles = StyleSheet.create({
     fontWeight: '500',
   },
 });
+
+// TODO: Implement reject functionality
 function handleReject(id: string): void {
   throw new Error('Function not implemented.');
 }
-

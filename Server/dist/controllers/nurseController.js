@@ -11,97 +11,99 @@ var __awaiter = (this && this.__awaiter) || function (thisArg, _arguments, P, ge
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.getAssignedPatients = exports.rejectNurse = exports.approveNurse = exports.getNurses = void 0;
 const Nurse_1 = require("../models/Nurse");
-const AppError_1 = require("../utils/AppError");
 const getNurses = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
         const nurses = yield Nurse_1.Nurse.find()
-            .populate('user', 'fullName email')
-            .sort({ createdAt: -1 });
+            .select('-password')
+            .lean();
         res.json({
             success: true,
-            data: nurses,
+            data: nurses
         });
     }
     catch (error) {
-        console.error('Get nurses error:', error);
-        throw new AppError_1.AppError('Error fetching nurses', 500);
+        console.error('Error fetching nurses:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch nurses'
+        });
     }
 });
 exports.getNurses = getNurses;
 const approveNurse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const nurse = yield Nurse_1.Nurse.findById(req.params.id);
+        const nurse = yield Nurse_1.Nurse.findByIdAndUpdate(req.params.id, { status: 'approved' }, { new: true }).select('-password');
         if (!nurse) {
-            throw new AppError_1.AppError('Nurse not found', 404);
+            return res.status(404).json({
+                success: false,
+                message: 'Nurse not found'
+            });
         }
-        nurse.isApproved = true;
-        yield nurse.save();
         res.json({
             success: true,
-            data: nurse,
-            message: 'Nurse approved successfully',
+            data: nurse
         });
     }
     catch (error) {
-        console.error('Approve nurse error:', error);
-        throw new AppError_1.AppError('Error approving nurse', 500);
+        console.error('Error approving nurse:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to approve nurse'
+        });
     }
 });
 exports.approveNurse = approveNurse;
 const rejectNurse = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
     try {
-        const nurse = yield Nurse_1.Nurse.findById(req.params.id);
+        const nurse = yield Nurse_1.Nurse.findByIdAndUpdate(req.params.id, { status: 'rejected' }, { new: true }).select('-password');
         if (!nurse) {
-            throw new AppError_1.AppError('Nurse not found', 404);
+            return res.status(404).json({
+                success: false,
+                message: 'Nurse not found'
+            });
         }
-        nurse.isApproved = false;
-        yield nurse.save();
         res.json({
             success: true,
-            data: nurse,
-            message: 'Nurse rejected successfully',
+            data: nurse
         });
     }
     catch (error) {
-        console.error('Reject nurse error:', error);
-        throw new AppError_1.AppError('Error rejecting nurse', 500);
+        console.error('Error rejecting nurse:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to reject nurse'
+        });
     }
 });
 exports.rejectNurse = rejectNurse;
 const getAssignedPatients = (req, res) => __awaiter(void 0, void 0, void 0, function* () {
+    var _a;
     try {
-        if (!req.user) {
-            throw new AppError_1.AppError('Authentication required', 401);
-        }
-        const nurse = yield Nurse_1.Nurse.findOne({ user: req.user._id })
+        const nurse = yield Nurse_1.Nurse.findOne({ user: (_a = req.user) === null || _a === void 0 ? void 0 : _a._id })
             .populate({
             path: 'assignedPatients',
             populate: {
                 path: 'user',
-                select: 'fullName',
-            },
+                select: 'firstName lastName fullName email'
+            }
         });
         if (!nurse) {
-            throw new AppError_1.AppError('Nurse not found', 404);
+            return res.status(404).json({
+                success: false,
+                message: 'Nurse not found'
+            });
         }
         res.json({
             success: true,
-            data: nurse.assignedPatients,
+            data: nurse.assignedPatients
         });
     }
     catch (error) {
-        if (error instanceof AppError_1.AppError) {
-            res.status(error.statusCode).json({
-                success: false,
-                message: error.message,
-            });
-        }
-        else {
-            res.status(500).json({
-                success: false,
-                message: 'Internal server error',
-            });
-        }
+        console.error('Error fetching assigned patients:', error);
+        res.status(500).json({
+            success: false,
+            message: 'Failed to fetch assigned patients'
+        });
     }
 });
 exports.getAssignedPatients = getAssignedPatients;

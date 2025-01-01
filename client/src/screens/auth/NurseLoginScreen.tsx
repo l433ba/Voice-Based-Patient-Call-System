@@ -1,3 +1,4 @@
+// Import necessary dependencies from React and React Native
 import React, { useState } from 'react';
 import {
   View,
@@ -14,23 +15,31 @@ import { useAuth } from '@/contexts/AuthContext';
 import Toast from 'react-native-toast-message';
 import type { NavigationProp } from '@/types/navigation';
 
+// Main component for the nurse login screen
 export const NurseLoginScreen = () => {
+  // Initialize navigation and auth hooks
   const navigation = useNavigation<NavigationProp>();
   const { login } = useAuth();
+  
+  // State management for form inputs
   const [formData, setFormData] = useState({
     email: '',
     password: '',
   });
 
+  // Handle login form submission
   const handleLogin = async () => {
     try {
+      // Validate form inputs
       if (!formData.email.trim() || !formData.password) {
         Alert.alert('Error', 'Please enter both email and password');
         return;
       }
 
+      // Attempt to login with provided credentials
       await login(formData.email, formData.password);
     } catch (error: any) {
+      // Handle login errors and display appropriate message
       const errorMessage = 
         error.response?.data?.message || 
         error.message || 
@@ -46,6 +55,7 @@ export const NurseLoginScreen = () => {
 
   return (
     <ScrollView contentContainerStyle={styles.container}>
+      {/* Logo/Image display */}
       <Image
         source={require('@assets/Nurse.png')}
         style={styles.image}
@@ -54,7 +64,9 @@ export const NurseLoginScreen = () => {
 
       <Text style={styles.title}>Nurse Login</Text>
       
+      {/* Login form */}
       <View style={styles.form}>
+        {/* Email input field */}
         <TextInput
           style={styles.input}
           placeholder="Email"
@@ -64,6 +76,7 @@ export const NurseLoginScreen = () => {
           autoCapitalize="none"
         />
 
+        {/* Password input field */}
         <TextInput
           style={styles.input}
           placeholder="Password"
@@ -72,10 +85,12 @@ export const NurseLoginScreen = () => {
           secureTextEntry
         />
 
+        {/* Login button */}
         <TouchableOpacity style={styles.loginButton} onPress={handleLogin}>
           <Text style={styles.loginButtonText}>Login</Text>
         </TouchableOpacity>
 
+        {/* Registration link */}
         <TouchableOpacity
           style={styles.registerLink}
           onPress={() => navigation.navigate('NurseRegistration')}
@@ -89,6 +104,7 @@ export const NurseLoginScreen = () => {
   );
 };
 
+// Styles for the component
 const styles = StyleSheet.create({
   container: {
     flexGrow: 1,

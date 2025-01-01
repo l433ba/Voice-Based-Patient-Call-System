@@ -140,10 +140,10 @@ export class SocketService {
 
           const oldStatus = request.status;
           request.status = status;
-          request.notes = notes;
+          request.description = notes; // Using description instead of notes
 
           if (status === 'completed') {
-            request.completionTime = new Date();
+            request.completedAt = new Date(); // Using completedAt instead of completionTime
           }
 
           await request.save();

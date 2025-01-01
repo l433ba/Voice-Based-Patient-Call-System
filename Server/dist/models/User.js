@@ -48,33 +48,33 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.User = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const bcryptjs_1 = __importDefault(require("bcryptjs"));
-const types_1 = require("../types");
 const userSchema = new mongoose_1.Schema({
     firstName: { type: String, required: true },
     lastName: { type: String, required: true },
-    fullName: { type: String, required: true },
+    fullName: { type: String },
     email: { type: String, required: true, unique: true },
     password: { type: String, required: true },
     role: { type: String, enum: ['patient', 'nurse', 'admin'], required: true },
-    department: { type: mongoose_1.Schema.Types.ObjectId, ref: 'Department' },
+    department: { type: String },
     room: { type: String },
-    active: { type: Boolean, default: true },
-    status: { type: String, enum: Object.values(types_1.UserStatus), default: types_1.UserStatus.PENDING }
+    status: {
+        type: String,
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    }
 }, {
     timestamps: true
 });
 userSchema.pre('save', function (next) {
     return __awaiter(this, void 0, void 0, function* () {
-        if (!this.isModified('password'))
-            return next();
-        try {
+        if (this.isModified('firstName') || this.isModified('lastName')) {
+            this.fullName = `${this.firstName} ${this.lastName}`;
+        }
+        if (this.isModified('password')) {
             const salt = yield bcryptjs_1.default.genSalt(10);
             this.password = yield bcryptjs_1.default.hash(this.password, salt);
-            next();
         }
-        catch (error) {
-            next(error);
-        }
+        next();
     });
 });
 userSchema.methods.comparePassword = function (candidatePassword) {

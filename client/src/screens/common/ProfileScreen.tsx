@@ -2,6 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 
+/**
+ * Common profile screen used across all user roles
+ * Displays basic user information from auth context
+ */
 export const ProfileScreen = () => {
   const { user } = useAuth();
 

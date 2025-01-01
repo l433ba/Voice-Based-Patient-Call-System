@@ -2,6 +2,10 @@ import React from 'react';
 import { View, Text, StyleSheet, TouchableOpacity } from 'react-native';
 import { useAuth } from '../../contexts/AuthContext';
 
+/**
+ * Common settings screen with shared functionality
+ * Currently handles logout for all user types
+ */
 export const SettingsScreen = () => {
   const { logout } = useAuth();
 

@@ -1,3 +1,4 @@
+// Import necessary dependencies from React and React Native
 import React, { useState } from 'react';
 import {
   View,
@@ -10,8 +11,10 @@ import {
 import Icon from 'react-native-vector-icons/MaterialIcons';
 import { Picker } from '@react-native-picker/picker';
 
+// Define request status types
 type RequestStatus = 'pending' | 'assigned' | 'completed' | 'cancelled';
 
+// Define the structure of a request object
 type Request = {
   id: string;
   patientName: string;
@@ -24,6 +27,7 @@ type Request = {
 };
 
 export const RequestManagementScreen = () => {
+  // State management for search, filter and requests
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState<RequestStatus | 'all'>('all');
   const [requests, setRequests] = useState<Request[]>([
@@ -39,6 +43,7 @@ export const RequestManagementScreen = () => {
     // Add more dummy data...
   ]);
 
+  // Helper function to determine color based on priority level
   const getPriorityColor = (priority: Request['priority']) => {
     switch (priority) {
       case 'high':
@@ -52,6 +57,7 @@ export const RequestManagementScreen = () => {
     }
   };
 
+  // Helper function to determine color based on request status
   const getStatusColor = (status: RequestStatus) => {
     switch (status) {
       case 'pending':
@@ -67,8 +73,10 @@ export const RequestManagementScreen = () => {
     }
   };
 
+  // Component to render individual request cards
   const renderRequestCard = ({ item }: { item: Request }) => (
     <View style={styles.card}>
+      {/* Card Header - Patient Info and Priority Badge */}
       <View style={styles.cardHeader}>
         <View>
           <Text style={styles.patientName}>{item.patientName}</Text>
@@ -82,6 +90,7 @@ export const RequestManagementScreen = () => {
         </View>
       </View>
 
+      {/* Request Details Section */}
       <View style={styles.requestDetails}>
         <View style={styles.detailRow}>
           <Icon name="local-hospital" size={16} color="#666" />
@@ -99,6 +108,7 @@ export const RequestManagementScreen = () => {
         )}
       </View>
 
+      {/* Card Footer - Status and Action Buttons */}
       <View style={styles.cardFooter}>
         <View style={[
           styles.statusBadge,
@@ -121,6 +131,7 @@ export const RequestManagementScreen = () => {
 
   return (
     <View style={styles.container}>
+      {/* Search and Filter Section */}
       <View style={styles.filterContainer}>
         <View style={styles.searchBox}>
           <Icon name="search" size={24} color="#666" />
@@ -147,6 +158,7 @@ export const RequestManagementScreen = () => {
         </View>
       </View>
 
+      {/* Request List */}
       <FlatList
         data={requests}
         renderItem={renderRequestCard}
@@ -157,7 +169,9 @@ export const RequestManagementScreen = () => {
   );
 };
 
+// Styles definition
 const styles = StyleSheet.create({
+  // Container styles
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
@@ -190,10 +204,12 @@ const styles = StyleSheet.create({
   picker: {
     height: 50,
   },
+  // List styles
   list: {
     padding: 16,
     gap: 16,
   },
+  // Card styles
   card: {
     backgroundColor: '#fff',
     borderRadius: 12,
@@ -219,6 +235,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  // Badge styles
   priorityBadge: {
     paddingHorizontal: 8,
     paddingVertical: 4,
@@ -230,6 +247,7 @@ const styles = StyleSheet.create({
     fontWeight: '500',
     textTransform: 'capitalize',
   },
+  // Detail styles
   requestDetails: {
     gap: 8,
     marginBottom: 16,
@@ -243,6 +261,7 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: '#666',
   },
+  // Footer styles
   cardFooter: {
     flexDirection: 'row',
     justifyContent: 'space-between',

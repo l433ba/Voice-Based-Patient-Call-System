@@ -11,6 +11,7 @@ export interface IUser extends Document {
   department?: string;
   room?: string;
   status: 'pending' | 'approved' | 'rejected';
+  active?: boolean;
   comparePassword(candidatePassword: string): Promise<boolean>;
 }
 

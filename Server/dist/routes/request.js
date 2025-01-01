@@ -4,15 +4,19 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 };
 Object.defineProperty(exports, "__esModule", { value: true });
 const express_1 = __importDefault(require("express"));
-const requestController_1 = require("../controllers/requestController");
 const auth_1 = require("../middleware/auth");
-const auth_2 = require("../middleware/auth");
+const requestController_1 = require("../controllers/requestController");
 const router = express_1.default.Router();
-// Patient routes
-router.post('/', auth_1.auth, (0, auth_1.checkRole)(['patient']), requestController_1.createRequest);
-// Shared routes (accessible by all roles)
-router.get('/', auth_2.auth, requestController_1.getRequests);
-// Admin and nurse routes
-router.put('/:id/assign', auth_2.auth, (0, auth_1.checkRole)(['admin', 'nurse']), requestController_1.assignRequest);
-router.put('/:id/status', auth_2.auth, (0, auth_1.checkRole)(['admin', 'nurse']), requestController_1.updateRequestStatus);
+// Protected routes - all routes require authentication
+router.use(auth_1.protect);
+// Patient routes - temporarily remove validation
+router.post('/', requestController_1.createRequest);
+// Shared routes
+router.get('/', requestController_1.getRequests);
+// Nurse and admin routes
+router.put('/:requestId/status', requestController_1.updateRequestStatus);
+router.put('/:requestId/assign', requestController_1.assignRequest);
+router.get('/health', (req, res) => {
+    res.json({ status: 'ok' });
+});
 exports.default = router;

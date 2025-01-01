@@ -14,7 +14,8 @@ var __importDefault = (this && this.__importDefault) || function (mod) {
 Object.defineProperty(exports, "__esModule", { value: true });
 exports.checkRole = exports.auth = exports.authorize = exports.protect = void 0;
 const jsonwebtoken_1 = __importDefault(require("jsonwebtoken"));
-const User_1 = require("../models/User");
+const Patient_1 = require("../models/Patient");
+const Nurse_1 = require("../models/Nurse");
 const AppError_1 = require("../utils/AppError");
 const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* () {
     var _a;
@@ -24,7 +25,20 @@ const protect = (req, res, next) => __awaiter(void 0, void 0, void 0, function* 
             throw new AppError_1.AppError('Authentication required', 401);
         }
         const decoded = jsonwebtoken_1.default.verify(token, process.env.JWT_SECRET);
-        const user = yield User_1.User.findById(decoded._id);
+        let user;
+        if (decoded.role === 'patient') {
+            user = yield Patient_1.Patient.findById(decoded.id);
+        }
+        else if (decoded.role === 'nurse') {
+            user = yield Nurse_1.Nurse.findById(decoded.id);
+        }
+        else if (decoded.role === 'admin') {
+            user = {
+                _id: 'admin',
+                role: 'admin',
+                fullName: 'Administrator'
+            };
+        }
         if (!user) {
             throw new AppError_1.AppError('User not found', 404);
         }

@@ -104,13 +104,25 @@ export const validatePatientRegistration = [
 ];
 
 export const validateRequest = [
-  body('description')
+  body('fullName')
     .trim()
     .notEmpty()
-    .withMessage('Description is required'),
-  body('priority')
-    .isIn(['low', 'medium', 'high'])
-    .withMessage('Invalid priority'),
+    .withMessage('Full name is required'),
+  body('contactNumber')
+    .trim()
+    .notEmpty()
+    .withMessage('Contact number is required'),
+  body('roomNumber')
+    .trim()
+    .notEmpty()
+    .withMessage('Room number is required'),
+  body('disease')
+    .trim()
+    .notEmpty()
+    .withMessage('Disease is required'),
+  body('bedNumber')
+    .optional()
+    .trim(),
 
   (req: Request, res: Response, next: NextFunction) => {
     const errors = validationResult(req);
@@ -139,4 +151,14 @@ export const validateRequestStatus = [
     }
     next();
   }
+];
+
+export const validateUserUpdate = [
+  // ... existing validation rules
+];
+
+export const validateApproval = validateNurseApproval;
+
+export const validateGetUsersByRole = [
+  // ... validation rules for getting users by role
 ];

@@ -36,28 +36,17 @@ Object.defineProperty(exports, "__esModule", { value: true });
 exports.Nurse = void 0;
 const mongoose_1 = __importStar(require("mongoose"));
 const nurseSchema = new mongoose_1.Schema({
-    user: {
-        type: mongoose_1.Schema.Types.ObjectId,
-        ref: 'User',
-        required: true,
-    },
-    nurseRole: {
+    fullName: { type: String, required: true },
+    email: { type: String, required: true, unique: true },
+    password: { type: String, required: true },
+    contactNumber: { type: String, required: true },
+    nurseRole: { type: String, required: true },
+    status: {
         type: String,
-        required: true,
-    },
-    experience: {
-        type: String,
-        required: true,
-    },
-    isApproved: {
-        type: Boolean,
-        default: false,
-    },
-    assignedPatients: [{
-            type: mongoose_1.Schema.Types.ObjectId,
-            ref: 'Patient',
-        }],
+        enum: ['pending', 'approved', 'rejected'],
+        default: 'pending'
+    }
 }, {
-    timestamps: true,
+    timestamps: true
 });
 exports.Nurse = mongoose_1.default.model('Nurse', nurseSchema);

@@ -103,14 +103,14 @@ npm install
 #### Update the configuration: Edit src/config.ts with your backend URL.
 #### Start the frontend application:
 ```bash
-npm start
+npx expo start -c
 ```
 #### Running the Application
 - Use the Expo Go app to scan the QR code from your terminal.
 - Alternatively, run the app on an emulator via Android Studio or Xcode.
 
 #### Default Admin Credentials
-- Email: admin
+- Username: admin
 - Password: admin
 
 
@@ -138,3 +138,31 @@ git push origin feature/AmazingFeature
 
 #### License
 - This project is licensed under the MIT License. See the LICENSE file for details.
+
+## Important Approaches and External Services
+
+### Client-Side Technologies
+- **React Native**: A framework for building mobile applications using JavaScript and React.
+- **Expo**: A set of tools and services for rapid development and testing of React Native applications.
+- **React Navigation**: A library for managing navigation and routing in React Native applications.
+- **React Native Paper**: A UI component library that follows Material Design guidelines, providing pre-built components for a consistent look and feel.
+- **Axios**: A promise-based HTTP client for making requests to the backend API.
+- **Lodash**: A utility library that simplifies common programming tasks, such as data manipulation.
+- **React Native Vector Icons**: A library for using customizable icons in the application.
+
+### State Management
+- **Context API**: Used for managing global state, such as user authentication and data sharing across components.
+
+### External Services
+- **Azure OpenAI**: Utilized for natural language processing (NLP) to analyze and prioritize patient requests.
+- **Microsoft Speech Services**: Integrated for speech-to-text and text-to-speech functionalities, enhancing voice-driven interactions.
+- **Toast Notifications**: Using `react-native-toast-message` for displaying notifications and alerts to users.
+
+### Server-Side Technologies
+- **Node.js with Express**: The backend is built using Node.js and Express.js, providing a robust framework for handling HTTP requests and managing routes.
+- **MongoDB**: A NoSQL database used for storing user data, requests, and other application-related information.
+- **Socket.IO**: Implemented for real-time communication between the server and clients, allowing for instant updates and notifications.
+- **JWT (JSON Web Tokens)**: Used for secure authentication and authorization.
+
+### API Integration
+- The server integrates with external APIs to handle requests, manage appointments, and provide a seamless experience for users.

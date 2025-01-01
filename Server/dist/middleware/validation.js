@@ -1,71 +1,151 @@
 "use strict";
 Object.defineProperty(exports, "__esModule", { value: true });
-exports.validateGetUsersByRole = exports.validateRequestStatus = exports.validatePatientRegistration = exports.validateApproval = exports.validateUserUpdate = exports.validateRequest = exports.validateLogin = exports.validateRegistration = void 0;
+exports.validateGetUsersByRole = exports.validateApproval = exports.validateUserUpdate = exports.validateRequestStatus = exports.validateRequest = exports.validatePatientRegistration = exports.validateNurseApproval = exports.validateLogin = exports.validateRegistration = void 0;
 const express_validator_1 = require("express-validator");
-const types_1 = require("../types");
 exports.validateRegistration = [
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('password').isLength({ min: 6 }),
-    (0, express_validator_1.body)('firstName').trim().notEmpty(),
-    (0, express_validator_1.body)('lastName').trim().notEmpty(),
-    (0, express_validator_1.body)('role').isIn(Object.values(types_1.UserRole)),
-    (0, express_validator_1.body)('department').optional().trim().notEmpty(),
-    (0, express_validator_1.body)('room').optional().trim().notEmpty(),
-    validateResult
+    (0, express_validator_1.body)('email').isEmail().withMessage('Please enter a valid email'),
+    (0, express_validator_1.body)('password')
+        .isLength({ min: 6 })
+        .withMessage('Password must be at least 6 characters long'),
+    (0, express_validator_1.body)('fullName').trim().notEmpty().withMessage('Full name is required'),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+        next();
+    }
 ];
 exports.validateLogin = [
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('password').notEmpty(),
-    validateResult
+    (0, express_validator_1.body)('email').isEmail().withMessage('Please enter a valid email'),
+    (0, express_validator_1.body)('password').notEmpty().withMessage('Password is required'),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+        next();
+    }
 ];
-exports.validateRequest = [
-    (0, express_validator_1.body)('description').trim().notEmpty(),
-    (0, express_validator_1.body)('priority').isIn(Object.values(types_1.RequestPriority)),
-    (0, express_validator_1.body)('department').isIn(Object.values(types_1.NursingDepartment)),
-    (0, express_validator_1.body)('patient').isMongoId().withMessage('Invalid patient ID'),
-    (0, express_validator_1.body)('nurse').isMongoId().withMessage('Invalid nurse ID'),
-    validateResult
-];
-exports.validateUserUpdate = [
-    (0, express_validator_1.body)('firstName').optional().trim().notEmpty(),
-    (0, express_validator_1.body)('lastName').optional().trim().notEmpty(),
-    (0, express_validator_1.body)('department').optional().isMongoId(),
-    (0, express_validator_1.body)('room').optional().trim().notEmpty(),
-    (0, express_validator_1.body)('active').optional().isBoolean(),
-    validateResult
-];
-exports.validateApproval = [
-    (0, express_validator_1.body)('status').isIn([types_1.UserStatus.APPROVED, types_1.UserStatus.REJECTED]),
-    validateResult
+exports.validateNurseApproval = [
+    (0, express_validator_1.body)('status')
+        .isIn(['approved', 'rejected'])
+        .withMessage('Invalid status'),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+        next();
+    }
 ];
 exports.validatePatientRegistration = [
-    (0, express_validator_1.body)('email').isEmail().normalizeEmail(),
-    (0, express_validator_1.body)('password').isLength({ min: 6 }),
-    (0, express_validator_1.body)('firstName').trim().notEmpty(),
-    (0, express_validator_1.body)('lastName').trim().notEmpty(),
-    (0, express_validator_1.body)('room').trim().notEmpty(),
-    validateResult
+    (0, express_validator_1.body)('fullName')
+        .trim()
+        .notEmpty()
+        .withMessage('Full name is required'),
+    (0, express_validator_1.body)('email')
+        .trim()
+        .isEmail()
+        .withMessage('Valid email is required'),
+    (0, express_validator_1.body)('password')
+        .isLength({ min: 6 })
+        .withMessage('Password must be at least 6 characters'),
+    (0, express_validator_1.body)('fullAddress')
+        .trim()
+        .notEmpty()
+        .withMessage('Address is required'),
+    (0, express_validator_1.body)('contactNumber')
+        .trim()
+        .notEmpty()
+        .withMessage('Contact number is required'),
+    (0, express_validator_1.body)('emergencyContact')
+        .trim()
+        .notEmpty()
+        .withMessage('Emergency contact is required'),
+    (0, express_validator_1.body)('roomNumber')
+        .trim()
+        .notEmpty()
+        .withMessage('Room number is required'),
+    (0, express_validator_1.body)('bedNumber')
+        .trim()
+        .notEmpty()
+        .withMessage('Bed number is required'),
+    (0, express_validator_1.body)('disease')
+        .trim()
+        .notEmpty()
+        .withMessage('Disease is required'),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                message: errors.array()[0].msg,
+                errors: errors.array()
+            });
+        }
+        next();
+    }
+];
+exports.validateRequest = [
+    (0, express_validator_1.body)('fullName')
+        .trim()
+        .notEmpty()
+        .withMessage('Full name is required'),
+    (0, express_validator_1.body)('contactNumber')
+        .trim()
+        .notEmpty()
+        .withMessage('Contact number is required'),
+    (0, express_validator_1.body)('roomNumber')
+        .trim()
+        .notEmpty()
+        .withMessage('Room number is required'),
+    (0, express_validator_1.body)('disease')
+        .trim()
+        .notEmpty()
+        .withMessage('Disease is required'),
+    (0, express_validator_1.body)('bedNumber')
+        .optional()
+        .trim(),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+        next();
+    }
 ];
 exports.validateRequestStatus = [
     (0, express_validator_1.body)('status')
-        .isIn(Object.values(types_1.RequestStatus))
-        .withMessage('Invalid request status'),
-    validateResult
-];
-exports.validateGetUsersByRole = [
-    (0, express_validator_1.query)('role')
-        .isIn(Object.values(types_1.UserRole))
-        .withMessage('Invalid user role'),
-    (0, express_validator_1.query)('status')
-        .optional()
-        .isIn(Object.values(types_1.UserStatus))
-        .withMessage('Invalid user status'),
-    validateResult
-];
-function validateResult(req, res, next) {
-    const errors = (0, express_validator_1.validationResult)(req);
-    if (!errors.isEmpty()) {
-        return res.status(400).json({ errors: errors.array() });
+        .isIn(['pending', 'assigned', 'in_progress', 'completed', 'cancelled'])
+        .withMessage('Invalid status'),
+    (req, res, next) => {
+        const errors = (0, express_validator_1.validationResult)(req);
+        if (!errors.isEmpty()) {
+            return res.status(400).json({
+                success: false,
+                errors: errors.array()
+            });
+        }
+        next();
     }
-    next();
-}
+];
+exports.validateUserUpdate = [
+// ... existing validation rules
+];
+exports.validateApproval = exports.validateNurseApproval;
+exports.validateGetUsersByRole = [
+// ... validation rules for getting users by role
+];

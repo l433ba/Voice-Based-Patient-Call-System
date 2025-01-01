@@ -1,42 +1,168 @@
 import React, { useState, useEffect } from 'react';
-import { View, Text, StyleSheet, FlatList } from 'react-native';
-import { requestApi } from '../../services/api';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  RefreshControl,
+  Platform,
+} from 'react-native';
+import {
+  Text,
+  Surface,
+  IconButton,
+  useTheme,
+  ActivityIndicator,
+  Chip,
+} from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '@/contexts/AuthContext';
+import { useNavigation } from '@react-navigation/native';
+import { format } from 'date-fns';
+import Toast from 'react-native-toast-message';
 
 interface Request {
-  _id: string;
+  id: string;
   description: string;
-  status: string;
+  status: 'pending' | 'accepted' | 'completed' | 'cancelled';
+  urgency: 'low' | 'normal' | 'high';
+  createdAt: string;
+  assignedNurse?: {
+    name: string;
+    id: string;
+  };
 }
 
-export const MyRequestsScreen = () => {
+export const MyRequestsScreen: React.FC = () => {
+  const { user } = useAuth();
+  const navigation = useNavigation();
+  const theme = useTheme();
   const [requests, setRequests] = useState<Request[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [refreshing, setRefreshing] = useState(false);
+
+  const fetchRequests = async () => {
+    try {
+      // Add API call to fetch requests
+      setRequests([
+        {
+          id: '1',
+          description: 'Need assistance with medication',
+          status: 'pending',
+          urgency: 'normal',
+          createdAt: new Date().toISOString(),
+        },
+        {
+          id: '2',
+          description: 'Require help with mobility',
+          status: 'accepted',
+          urgency: 'high',
+          createdAt: new Date().toISOString(),
+          assignedNurse: {
+            name: 'Jane Smith',
+            id: 'n1',
+          },
+        },
+      ]);
+    } catch (error) {
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch requests',
+      });
+    } finally {
+      setLoading(false);
+      setRefreshing(false);
+    }
+  };
 
   useEffect(() => {
-    const fetchRequests = async () => {
-      try {
-        const response = await requestApi.getRequests();
-        setRequests(response.data);
-      } catch (error) {
-        console.error('Failed to fetch requests:', error);
-      }
-    };
-
     fetchRequests();
   }, []);
 
+  const onRefresh = () => {
+    setRefreshing(true);
+    fetchRequests();
+  };
+
+  const getStatusColor = (status: Request['status']) => {
+    switch (status) {
+      case 'pending':
+        return '#FFA000';
+      case 'accepted':
+        return '#2196F3';
+      case 'completed':
+        return '#4CAF50';
+      case 'cancelled':
+        return '#F44336';
+      default:
+        return '#757575';
+    }
+  };
+
+  const getUrgencyColor = (urgency: Request['urgency']) => {
+    switch (urgency) {
+      case 'low':
+        return '#4CAF50';
+      case 'normal':
+        return '#2196F3';
+      case 'high':
+        return '#F44336';
+      default:
+        return '#757575';
+    }
+  };
+
+  if (loading) {
+    return (
+      <View style={styles.loadingContainer}>
+        <ActivityIndicator size="large" />
+      </View>
+    );
+  }
+
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>My Requests</Text>
-      <FlatList
-        data={requests}
-        keyExtractor={(item) => item._id}
-        renderItem={({ item }) => (
-          <View style={styles.requestItem}>
-            <Text style={styles.requestDescription}>{item.description}</Text>
-            <Text style={styles.requestStatus}>Status: {item.status}</Text>
-          </View>
-        )}
-      />
+      <ScrollView
+        style={styles.content}
+        refreshControl={
+          <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
+        }
+      >
+        {requests.map((request) => (
+          <Surface key={request.id} style={styles.card}>
+            <Text style={styles.description}>{request.description}</Text>
+            <View style={styles.chipContainer}>
+              <Chip
+                style={[
+                  styles.chip,
+                  { backgroundColor: getStatusColor(request.status) },
+                ]}
+                textStyle={styles.chipText}
+              >
+                {request.status.toUpperCase()}
+              </Chip>
+              <Chip
+                style={[
+                  styles.chip,
+                  { backgroundColor: getUrgencyColor(request.urgency) },
+                ]}
+                textStyle={styles.chipText}
+              >
+                {request.urgency.toUpperCase()}
+              </Chip>
+            </View>
+            <Text style={styles.date}>
+              Created: {format(new Date(request.createdAt), 'MMM dd, yyyy HH:mm')}
+            </Text>
+            {request.assignedNurse && (
+              <Text style={styles.nurse}>
+                Assigned to: {request.assignedNurse.name}
+              </Text>
+            )}
+          </Surface>
+        ))}
+      </ScrollView>
+      <Toast />
     </View>
   );
 };
@@ -44,27 +170,49 @@ export const MyRequestsScreen = () => {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  loadingContainer: {
+    flex: 1,
+    justifyContent: 'center',
+    alignItems: 'center',
   },
-  requestItem: {
-    padding: 15,
-    borderWidth: 1,
-    borderColor: '#ddd',
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  card: {
+    padding: 16,
+    marginBottom: 16,
     borderRadius: 8,
-    marginBottom: 10,
+    elevation: 4,
+    margin: 8,
   },
-  requestDescription: {
+  description: {
     fontSize: 16,
-    marginBottom: 5,
+    marginBottom: 12,
+    color: '#333',
   },
-  requestStatus: {
-    fontSize: 14,
+  chipContainer: {
+    flexDirection: 'row',
+    marginBottom: 8,
+    gap: 8,
+  },
+  chip: {
+    marginRight: 8,
+  },
+  chipText: {
+    color: '#fff',
+  },
+  date: {
     color: '#666',
+    fontSize: 12,
+    marginBottom: 4,
   },
-}); 
+  nurse: {
+    color: '#333',
+    fontSize: 14,
+    marginTop: 8,
+    fontWeight: '500',
+  },
+});

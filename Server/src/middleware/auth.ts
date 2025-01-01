@@ -3,6 +3,7 @@ import jwt from 'jsonwebtoken';
 import { Patient } from '../models/Patient';
 import { Nurse } from '../models/Nurse';
 import { AppError } from '../utils/AppError';
+import { IUser } from '../models/User';
 
 interface JwtPayload {
   id: string;
@@ -36,7 +37,7 @@ export const protect = async (req: Request, res: Response, next: NextFunction) =
       throw new AppError('User not found', 404);
     }
 
-    req.user = user;
+    req.user = user as IUser;
     next();
   } catch (error) {
     next(new AppError('Please authenticate', 401));

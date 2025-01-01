@@ -10,6 +10,7 @@ import { createServer } from 'http';
 import authRoutes from './routes/auth';
 import nurseRoutes from './routes/nurse';
 import requestRoutes from './routes/request';
+import testRoutes from './routes/test';
 
 // Middleware
 import { errorHandler } from './middleware/errorHandler';
@@ -38,6 +39,11 @@ app.use('/api/auth', authRoutes);
 app.use('/api/nurses', nurseRoutes);
 app.use('/api/requests', requestRoutes);
 
+// Add test routes in development
+if (process.env.NODE_ENV !== 'production') {
+  app.use('/api/test', testRoutes);
+}
+
 // Error handling
 app.use((err: any, req: Request, res: Response, next: NextFunction) => {
   console.error('Error:', err);
@@ -61,7 +67,7 @@ mongoose
     
     // Start server - listen on all network interfaces
     const PORT = process.env.PORT || 5000;
-    httpServer.listen(PORT, '0.0.0.0', () => {
+    httpServer.listen(Number(PORT), '0.0.0.0', () => {
       console.log(`Server running on port ${PORT}`);
     });
   })

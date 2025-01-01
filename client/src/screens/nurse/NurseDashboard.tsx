@@ -1,3 +1,4 @@
+// Import necessary libraries and components
 import React, { useState, useEffect } from 'react';
 import {
   View,
@@ -10,70 +11,116 @@ import {
 } from 'react-native';
 import { useNavigation } from '@react-navigation/native';
 import Icon from 'react-native-vector-icons/MaterialIcons';
+import { LinearGradient } from 'expo-linear-gradient';
 import type { NavigationProp } from '@/types/navigation';
 import { useAuth } from '@/contexts/AuthContext';
 import { requestApi } from '@/services/api';
 import { socketService } from '@/services/socketService';
 import { RequestResponse } from '@/types/api';
 import Toast from 'react-native-toast-message';
+import { socket } from '../../services/socketService';
+import { RequestDialog } from '../../screens/patient/RequestDialog';
 
+// Define the structure of a NurseUser object
+interface NurseUser {
+  id: string;
+  fullName: string;
+  nurseRole: string;
+}
+
+// Define the structure of the API response for requests
+interface RequestApiResponse {
+  success: boolean;
+  data: {
+    requests: RequestResponse[];
+  };
+}
+
+// Main component for the Nurse Dashboard
 export const NurseDashboard = () => {
+  // Navigation and authentication hooks
   const navigation = useNavigation<NavigationProp>();
   const { user, logout } = useAuth();
+
+  // State variables for active requests, assigned patients, completed tasks, and refreshing status
   const [activeRequests, setActiveRequests] = useState<RequestResponse[]>([]);
   const [assignedPatients, setAssignedPatients] = useState<number>(0);
   const [completedTasks, setCompletedTasks] = useState<number>(0);
   const [refreshing, setRefreshing] = useState(false);
 
+  // Function to fetch dashboard data from the API
   const fetchDashboardData = async () => {
     try {
+      // Fetch requests and patients data concurrently
       const [requestsResponse, patientsResponse] = await Promise.all([
-        requestApi.getRequests({ status: 'pending' }),
-        requestApi.getRequests({ status: 'completed' }),
+        requestApi.getRequests(),
+        requestApi.getRequests()
       ]);
 
-      setActiveRequests(requestsResponse.data);
-      setCompletedTasks(patientsResponse.data.length);
+      // Extract active and completed requests from the responses
+      const activeReqs = requestsResponse?.data?.requests || [];
+      const completedReqs = patientsResponse?.data?.requests || [];
+
+      // Update state with filtered active requests and completed tasks count
+      setActiveRequests(activeReqs.filter(req => req.status === 'pending'));
+      setCompletedTasks(completedReqs.filter(req => req.status === 'completed').length);
+      
+      // Set assigned patients count based on the current user
+      setAssignedPatients(activeReqs.filter(req => 
+        req.status === 'assigned' && req.nurseId === user?.id
+      ).length);
+
     } catch (error) {
+      // Log error and show a toast notification if fetching fails
       console.error('Error fetching dashboard data:', error);
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to fetch dashboard data'
+      });
     }
   };
 
+  // Effect to fetch data and set up socket listeners
   useEffect(() => {
     fetchDashboardData();
 
-    // Listen for new requests
-    socketService.onNewRequest(({ request }) => {
+    // Socket listener for new requests
+    socket.on('newRequest', (request) => {
       setActiveRequests(prev => [...prev, request]);
+      
+      // Show notification for new request
       Toast.show({
         type: 'info',
         text1: 'New Request',
-        text2: 'You have a new patient request',
+        text2: `Priority: ${request.priority} - Patient: ${request.fullName}`,
+        position: 'top',
+        topOffset: 60,
+        visibilityTime: 6000,
       });
     });
 
-    // Listen for request updates
-    socketService.onRequestStatusUpdated(({ request }) => {
-      if (request.status === 'completed') {
-        setActiveRequests(prev =>
-          prev.filter(req => req.id !== request.id)
-        );
-        setCompletedTasks(prev => prev + 1);
-      }
+    // Socket listener for completed requests
+    socket.on('requestCompleted', (requestId) => {
+      setActiveRequests(prev => prev.filter(req => req.id !== requestId));
+      setCompletedTasks(prev => prev + 1);
     });
 
+    // Cleanup function to remove socket listeners on component unmount
     return () => {
-      socketService.removeListener('new_request');
-      socketService.removeListener('request_status_updated');
+      socket.off('newRequest');
+      socket.off('requestCompleted');
     };
   }, []);
 
+  // Function to handle pull-to-refresh action
   const onRefresh = async () => {
     setRefreshing(true);
     await fetchDashboardData();
     setRefreshing(false);
   };
 
+  // Function to handle user logout
   const handleLogout = () => {
     Alert.alert(
       'Logout',
@@ -90,6 +137,7 @@ export const NurseDashboard = () => {
               await logout();
               // Navigation will be handled by AuthContext
             } catch (error) {
+              // Show error toast if logout fails
               Toast.show({
                 type: 'error',
                 text1: 'Logout Failed',
@@ -103,6 +151,36 @@ export const NurseDashboard = () => {
     );
   };
 
+  // Function to handle marking a request as completed
+  const handleRequestComplete = async (requestId: string) => {
+    try {
+      await requestApi.updateRequestStatus(requestId, 'completed');
+      
+      // Update local state after completing the request
+      setActiveRequests(prev => prev.filter(req => req.id !== requestId));
+      setCompletedTasks(prev => prev + 1);
+      
+      // Show success toast notification
+      Toast.show({
+        type: 'success',
+        text1: 'Success',
+        text2: 'Request marked as completed',
+        position: 'top',
+        topOffset: 60,
+      });
+    } catch (error) {
+      // Show error toast if completing the request fails
+      Toast.show({
+        type: 'error',
+        text1: 'Error',
+        text2: 'Failed to complete request',
+        position: 'top',
+        topOffset: 60,
+      });
+    }
+  };
+
+  // Render the dashboard UI
   return (
     <ScrollView
       style={styles.container}
@@ -110,114 +188,126 @@ export const NurseDashboard = () => {
         <RefreshControl refreshing={refreshing} onRefresh={onRefresh} />
       }
     >
-      <View style={styles.header}>
+      <LinearGradient
+        colors={['#2C6EAB', '#4c669f'] as const}
+        style={styles.header}
+        start={{ x: 0, y: 0 }}
+        end={{ x: 1, y: 1 }}
+      >
         <View style={styles.headerContent}>
           <View>
             <Text style={styles.welcomeText}>Welcome, {user?.fullName}</Text>
-            <Text style={styles.roleText}>{user?.nurseRole}</Text>
+            <Text style={styles.roleText}>{(user as NurseUser)?.nurseRole || 'Nurse'}</Text>
           </View>
           <TouchableOpacity 
             style={styles.logoutButton}
             onPress={handleLogout}
           >
-            <Icon name="logout" size={24} color="#ff4444" />
+            <Icon name="logout" size={24} color="#fff" />
           </TouchableOpacity>
         </View>
-      </View>
+      </LinearGradient>
 
       <View style={styles.statsContainer}>
         <Text style={styles.sectionTitle}>Today's Overview</Text>
         <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
+          <LinearGradient
+            colors={['#6DD5FA', '#2980B9'] as const}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Icon name="people" size={24} color="#fff" />
             <Text style={styles.statNumber}>{assignedPatients}</Text>
             <Text style={styles.statLabel}>Assigned Patients</Text>
-          </View>
-          <View style={styles.statCard}>
+          </LinearGradient>
+
+          <LinearGradient
+            colors={['#FF6B6B', '#FF8E8E'] as const}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Icon name="notifications-active" size={24} color="#fff" />
             <Text style={styles.statNumber}>{activeRequests.length}</Text>
             <Text style={styles.statLabel}>Active Requests</Text>
-          </View>
-          <View style={styles.statCard}>
+          </LinearGradient>
+
+          <LinearGradient
+            colors={['#00796B', '#004D40'] as const}
+            style={styles.statCard}
+            start={{ x: 0, y: 0 }}
+            end={{ x: 1, y: 1 }}
+          >
+            <Icon name="check-circle" size={24} color="#fff" />
             <Text style={styles.statNumber}>{completedTasks}</Text>
             <Text style={styles.statLabel}>Completed Tasks</Text>
-          </View>
+          </LinearGradient>
         </View>
       </View>
 
       <View style={styles.menuContainer}>
         <Text style={styles.sectionTitle}>Quick Actions</Text>
         <View style={styles.menuGrid}>
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('MyPatients')}
-          >
-            <Icon name="people" size={32} color="#4c669f" />
-            <Text style={styles.menuItemText}>My Patients</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('ActiveRequests')}
-          >
-            <Icon name="notifications-active" size={32} color="#4c669f" />
-            <Text style={styles.menuItemText}>Active Requests</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('Schedule')}
-          >
-            <Icon name="schedule" size={32} color="#4c669f" />
-            <Text style={styles.menuItemText}>My Schedule</Text>
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => navigation.navigate('Profile')}
-          >
-            <Icon name="person" size={32} color="#4c669f" />
-            <Text style={styles.menuItemText}>Profile</Text>
-          </TouchableOpacity>
+          {[
+            { name: 'My Patients', icon: 'people', route: 'MyPatients', colors: ['#26C6DA', '#00ACC1'] },
+            { name: 'Active Requests', icon: 'notifications-active', route: 'ActiveRequests', colors: ['#FF7043', '#E64A19'] },
+            { name: 'Completed Tasks', icon: 'check-circle', route: 'CompletedTasks', colors: ['#FFD700', '#DAA520'] },
+            { name: 'My Schedule', icon: 'schedule', route: 'Schedule', colors: ['#7CB342', '#558B2F'] },
+            { name: 'My Profile', icon: 'person', route: 'NurseProfile', colors: ['#5C6BC0', '#3949AB'] },
+          ].map((item, index) => (
+            <TouchableOpacity
+              key={index}
+              style={styles.menuItem}
+              onPress={() => navigation.navigate(item.route)}
+            >
+              <LinearGradient
+                colors={item.colors}
+                style={styles.menuItemGradient}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+              >
+                <Icon name={item.icon} size={32} color="#fff" />
+                <Text style={styles.menuItemText}>{item.name}</Text>
+              </LinearGradient>
+            </TouchableOpacity>
+          ))}
         </View>
       </View>
     </ScrollView>
   );
 };
 
+// Define styles for the component
 const styles = StyleSheet.create({
   container: {
     flex: 1,
     backgroundColor: '#f5f5f5',
   },
   header: {
-    padding: 20,
-    backgroundColor: '#fff',
-    borderBottomWidth: 1,
-    borderBottomColor: '#eee',
+    padding: 15,
   },
   headerContent: {
     flexDirection: 'row',
     justifyContent: 'space-between',
     alignItems: 'center',
-    maxWidth: 600,
-    width: '100%',
-    alignSelf: 'center',
+    paddingTop: 20,
   },
   welcomeText: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#333',
-    flex: 1,
+    color: '#fff',
   },
   roleText: {
     fontSize: 14,
-    color: '#666',
+    color: '#fff',
+    opacity: 0.9,
     marginTop: 4,
   },
   logoutButton: {
-    padding: 0,
+    padding: 8,
     borderRadius: 8,
-    backgroundColor: '#fff5f5',
-    marginLeft: -8,
+    backgroundColor: '#ff4444',
   },
   statsContainer: {
     padding: 20,
@@ -234,24 +324,20 @@ const styles = StyleSheet.create({
   },
   statCard: {
     flex: 1,
-    backgroundColor: '#fff',
     padding: 15,
     borderRadius: 12,
     alignItems: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 3,
   },
   statNumber: {
     fontSize: 24,
     fontWeight: 'bold',
-    color: '#4c669f',
+    color: '#fff',
+    marginTop: 8,
   },
   statLabel: {
     fontSize: 12,
-    color: '#666',
+    color: '#fff',
     marginTop: 5,
     textAlign: 'center',
   },
@@ -266,22 +352,20 @@ const styles = StyleSheet.create({
   menuItem: {
     width: '47%',
     aspectRatio: 1,
-    backgroundColor: '#fff',
+  },
+  menuItemGradient: {
+    flex: 1,
     borderRadius: 12,
     padding: 15,
     alignItems: 'center',
     justifyContent: 'center',
-    elevation: 2,
-    shadowColor: '#000',
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 4,
+    elevation: 3,
   },
   menuItemText: {
     marginTop: 10,
     fontSize: 14,
     fontWeight: '500',
-    color: '#333',
+    color: '#fff',
     textAlign: 'center',
   },
 });

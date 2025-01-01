@@ -124,4 +124,24 @@ export const requestApi = {
     api.put(`/api/requests/${id}/status`, { status }),
 };
 
+export const profileApi = {
+  getProfile: (userId: string) => 
+    api.get(`/api/patients/${userId}/profile`),
+    
+  updateProfile: (userId: string, data: ProfileUpdateData) => 
+    api.put(`/api/patients/${userId}/profile`, data),
+    
+  uploadImage: (userId: string, formData: FormData) => 
+    api.post(`/api/patients/${userId}/profile/image`, formData, {
+      headers: {
+        'Content-Type': 'multipart/form-data',
+      },
+    }),
+};
+
+export const patientApi = {
+  getPatients: () => axios.get(`${API_URL}/api/patients`),
+  // ... other patient-related API calls
+};
+
 export default api;

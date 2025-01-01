@@ -1,3 +1,9 @@
+/**
+ * CreateRequestScreen.tsx
+ * Screen component for creating new requests in the admin interface.
+ * Allows selection of patient, nurse, priority, department and adding description.
+ */
+
 import React, { useState, useEffect } from 'react';
 import { View, StyleSheet, ScrollView, Alert } from 'react-native';
 import { TextInput, Button, Card, Title, HelperText, Divider, Menu } from 'react-native-paper';
@@ -6,6 +12,7 @@ import * as Yup from 'yup';
 import { departmentApi, userApi, Request } from '../../services/api';
 import { useNavigation } from '@react-navigation/native';
 
+// Type definitions for data models
 interface Department {
   id: string;
   name: string;
@@ -19,6 +26,7 @@ interface User {
   role: string;
 }
 
+// Form validation schema using Yup
 const validationSchema = Yup.object().shape({
   patient: Yup.string().required('Patient is required'),
   nurse: Yup.string().required('Nurse is required'),
@@ -28,6 +36,7 @@ const validationSchema = Yup.object().shape({
 });
 
 export default function CreateRequestScreen() {
+  // State management for form data and UI
   const [departments, setDepartments] = useState<Department[]>([]);
   const [patients, setPatients] = useState<User[]>([]);
   const [nurses, setNurses] = useState<User[]>([]);
@@ -35,10 +44,15 @@ export default function CreateRequestScreen() {
   const [showPriorityMenu, setShowPriorityMenu] = useState(false);
   const navigation = useNavigation();
 
+  // Fetch initial data on component mount
   useEffect(() => {
     fetchData();
   }, []);
 
+  /**
+   * Fetches departments, patients and approved nurses data
+   * Uses Promise.all for concurrent API calls
+   */
   const fetchData = async () => {
     try {
       const [deptResponse, patientsResponse, nursesResponse] = await Promise.all([
@@ -55,6 +69,10 @@ export default function CreateRequestScreen() {
     }
   };
 
+  /**
+   * Handles form submission
+   * Converts department ID to name before sending request
+   */
   const handleSubmit = async (values: any) => {
     try {
       setLoading(true);
@@ -80,6 +98,7 @@ export default function CreateRequestScreen() {
           <Title>Create New Request</Title>
           <Divider style={styles.divider} />
 
+          {/* Formik form wrapper for handling form state and validation */}
           <Formik
             initialValues={{
               patient: '',
@@ -93,7 +112,7 @@ export default function CreateRequestScreen() {
           >
             {({ handleChange, handleSubmit, values, errors, touched, setFieldValue }) => (
               <View>
-                {/* Patient Selection */}
+                {/* Patient Selection Menu */}
                 <Menu
                   visible={values.showPatientMenu}
                   onDismiss={() => setFieldValue('showPatientMenu', false)}
@@ -122,7 +141,7 @@ export default function CreateRequestScreen() {
                   {errors.patient}
                 </HelperText>
 
-                {/* Nurse Selection */}
+                {/* Nurse Selection Menu */}
                 <Menu
                   visible={values.showNurseMenu}
                   onDismiss={() => setFieldValue('showNurseMenu', false)}
@@ -151,7 +170,7 @@ export default function CreateRequestScreen() {
                   {errors.nurse}
                 </HelperText>
 
-                {/* Priority Selection */}
+                {/* Priority Selection Menu */}
                 <Menu
                   visible={showPriorityMenu}
                   onDismiss={() => setShowPriorityMenu(false)}
@@ -180,7 +199,7 @@ export default function CreateRequestScreen() {
                   {errors.priority}
                 </HelperText>
 
-                {/* Department Selection */}
+                {/* Department Selection Menu */}
                 <Menu
                   visible={values.showDepartmentMenu}
                   onDismiss={() => setFieldValue('showDepartmentMenu', false)}
@@ -209,7 +228,7 @@ export default function CreateRequestScreen() {
                   {errors.department}
                 </HelperText>
 
-                {/* Description Input */}
+                {/* Description Input Field */}
                 <TextInput
                   mode="outlined"
                   label="Description"
@@ -223,6 +242,7 @@ export default function CreateRequestScreen() {
                   {errors.description}
                 </HelperText>
 
+                {/* Submit Button */}
                 <Button
                   mode="contained"
                   onPress={handleSubmit}
@@ -240,6 +260,7 @@ export default function CreateRequestScreen() {
   );
 }
 
+// Styles for component layout and appearance
 const styles = StyleSheet.create({
   container: {
     flex: 1,

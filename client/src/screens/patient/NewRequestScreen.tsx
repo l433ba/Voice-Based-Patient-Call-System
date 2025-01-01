@@ -1,83 +1,136 @@
 import React, { useState } from 'react';
-import { View, Text, StyleSheet, TextInput, TouchableOpacity } from 'react-native';
+import {
+  View,
+  StyleSheet,
+  ScrollView,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import {
+  Text,
+  TextInput,
+  Button,
+  Surface,
+  useTheme,
+  IconButton,
+} from 'react-native-paper';
+import { LinearGradient } from 'expo-linear-gradient';
+import { useAuth } from '@/contexts/AuthContext';
 import { useNavigation } from '@react-navigation/native';
-import { requestApi } from '../../services/api';
 import Toast from 'react-native-toast-message';
-import type { NavigationProp } from '../../types/navigation';
 
-export const NewRequestScreen = () => {
-  const navigation = useNavigation<NavigationProp>();
+export const NewRequestScreen: React.FC = () => {
+  const { user } = useAuth();
+  const navigation = useNavigation();
+  const theme = useTheme();
   const [description, setDescription] = useState('');
+  const [urgency, setUrgency] = useState('normal');
 
   const handleSubmit = async () => {
     try {
-      await requestApi.createRequest({
-        description,
-        priority: 'medium',
-      });
-
+      // Add API call to submit request
       Toast.show({
         type: 'success',
-        text1: 'Request Created',
-        text2: 'Your request has been submitted successfully',
+        text1: 'Request Submitted',
+        text2: 'A nurse will be assigned to your request shortly.',
       });
-
       navigation.goBack();
     } catch (error) {
       Toast.show({
         type: 'error',
         text1: 'Error',
-        text2: 'Failed to create request',
+        text2: 'Failed to submit request. Please try again.',
       });
     }
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>New Request</Text>
-      <TextInput
-        style={styles.input}
-        placeholder="Describe your request..."
-        value={description}
-        onChangeText={setDescription}
-        multiline
-        numberOfLines={4}
-      />
-      <TouchableOpacity style={styles.button} onPress={handleSubmit}>
-        <Text style={styles.buttonText}>Submit Request</Text>
-      </TouchableOpacity>
-    </View>
+    <KeyboardAvoidingView
+      style={styles.container}
+      behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+    >
+      <ScrollView style={styles.content}>
+        <Surface style={styles.card}>
+          <Text style={styles.label}>Description</Text>
+          <TextInput
+            mode="outlined"
+            multiline
+            numberOfLines={4}
+            value={description}
+            onChangeText={setDescription}
+            placeholder="Describe your needs..."
+            style={styles.input}
+          />
+
+          <Text style={styles.label}>Urgency</Text>
+          <View style={styles.urgencyContainer}>
+            {['low', 'normal', 'high'].map((level) => (
+              <Button
+                key={level}
+                mode={urgency === level ? 'contained' : 'outlined'}
+                onPress={() => setUrgency(level)}
+                style={styles.urgencyButton}
+                labelStyle={styles.buttonLabel}
+              >
+                {level.charAt(0).toUpperCase() + level.slice(1)}
+              </Button>
+            ))}
+          </View>
+
+          <Button
+            mode="contained"
+            onPress={handleSubmit}
+            style={styles.submitButton}
+            disabled={!description.trim()}
+          >
+            Submit Request
+          </Button>
+        </Surface>
+      </ScrollView>
+      <Toast />
+    </KeyboardAvoidingView>
   );
 };
 
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 20,
-    backgroundColor: '#fff',
+    backgroundColor: '#f5f5f5',
   },
-  title: {
-    fontSize: 24,
-    fontWeight: 'bold',
-    marginBottom: 20,
+  content: {
+    flex: 1,
+    padding: 16,
+  },
+  card: {
+    padding: 16,
+    borderRadius: 8,
+    elevation: 4,
+    margin: 8,
+  },
+  label: {
+    fontSize: 16,
+    marginBottom: 8,
+    color: '#333',
+    fontWeight: '500',
   },
   input: {
-    borderWidth: 1,
-    borderColor: '#ddd',
-    borderRadius: 8,
-    padding: 15,
-    marginBottom: 20,
-    minHeight: 100,
+    marginBottom: 16,
+    backgroundColor: '#fff',
   },
-  button: {
-    backgroundColor: '#4c669f',
-    padding: 15,
-    borderRadius: 8,
-    alignItems: 'center',
+  urgencyContainer: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    marginBottom: 24,
+    gap: 8,
   },
-  buttonText: {
-    color: '#fff',
-    fontSize: 16,
-    fontWeight: '600',
+  urgencyButton: {
+    flex: 1,
   },
-}); 
+  buttonLabel: {
+    fontSize: 14,
+  },
+  submitButton: {
+    marginTop: 8,
+    paddingVertical: 6,
+  },
+});
