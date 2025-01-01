@@ -1,13 +1,3 @@
-node_modules
+node_modules/
 .env
-/dist
-/build
-*.log
-.DS_Store
-Thumbs.db
-.vscode/
-coverage/
-*.js
-*.ts
-*.map
 
